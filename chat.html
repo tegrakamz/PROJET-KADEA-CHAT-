@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-[#f8fafc]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kadea Chat - Messagerie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full overflow-hidden flex antialiased text-slate-800 dark:text-slate-100 bg-white dark:bg-[#020617] transition-colors duration-200">
+
+    <aside class="w-16 h-full bg-white dark:bg-[#090d1f] border-r border-slate-200 dark:border-slate-800/60 flex flex-col justify-between items-center py-4 flex-shrink-0 transition-colors duration-200">
+        <div class="flex flex-col items-center space-y-6 w-full">
+            <div class="bg-[#2563eb] p-2 rounded-xl shadow-sm w-10 h-10 flex items-center justify-center">
+                <img src="assets/icons/logo chat-kadea.jfif" alt="logo chat-kadea" class="w-5 h-5 object-contain invert" onerror="this.style.display='none'">
+            </div>
+            
+            <nav class="flex flex-col space-y-2 w-full px-2" id="main-nav">
+                <a href="chat.html" class="flex justify-center items-center py-3 bg-[#f0f4ff] text-[#2563eb] rounded-xl transition animate-pulse-once" title="Messages">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                </a>
+                <a href="#" class="flex justify-center items-center py-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition" title="Appels">
+                    <i data-lucide="phone" class="w-5 h-5"></i>
+                </a>
+                <a href="profil.html" class="flex justify-center items-center py-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition" title="Mon Profil">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </a>
+            </nav>
+        </div>
+
+        <div class="flex flex-col items-center space-y-4 w-full px-2">
+            <button id="btn-theme-toggle" class="flex justify-center items-center py-3 w-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Thème Sombre/Clair">
+                <i data-lucide="moon" id="theme-toggle-icon" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-settings" class="flex justify-center items-center py-3 w-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Paramètres">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-logout" class="flex justify-center items-center py-3 w-full text-red-400 dark:text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition" title="Déconnexion">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </aside>
+
+    <section class="w-80 h-full bg-white dark:bg-[#090d1f] border-r border-slate-200 dark:border-slate-800/60 flex flex-col flex-shrink-0 transition-colors duration-200">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+            <div class="flex items-center space-x-3" id="current-user-display">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Votre Avatar" id="user-avatar" class="w-9 h-9 rounded-full object-cover border border-slate-100 dark:border-slate-700">
+                <div>
+                    <h2 class="font-semibold text-xs text-slate-900 dark:text-slate-100 leading-tight" id="user-fullname">Chargement...</h2>
+                    <span class="text-[10px] text-green-500 font-medium flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span> Connecté
+                    </span>
+                </div>
+            </div>
+            <button class="p-2 text-slate-400 dark:text-slate-500 hover:text-[#2563eb] hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-lg transition" title="Nouvelle conversation">
+                <i data-lucide="square-pen" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800/60">
+            <div class="relative flex items-center">
+                <i data-lucide="search" class="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none"></i>
+                <input type="text" id="search-conversations" placeholder="Rechercher une discussion..." class="w-full pl-10 pr-4 py-2.5 bg-[#f0f4ff]/60 dark:bg-slate-950 dark:text-slate-100 text-xs rounded-xl outline-none transition-all focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 border border-transparent">
+            </div>
+        </div>
+
+        <div id="conversations-loader" class="hidden flex-1 flex flex-col items-center justify-center p-4 text-slate-400">
+            <div class="w-6 h-6 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin mb-2"></div>
+            <p class="text-[11px] font-medium">Chargement de vos discussions...</p>
+        </div>
+
+        <div id="conversations-empty" class="hidden flex-1 flex flex-col items-center justify-center p-4 text-slate-400 text-center">
+            <i data-lucide="message-square-dashed" class="w-8 h-8 mb-2 text-slate-300"></i>
+            <p class="text-xs font-medium">Aucune discussion en cours</p>
+        </div>
+
+        <div id="conversations-list" class="flex-1 overflow-y-auto divide-y divide-slate-50 no-scrollbar">
+        </div>
+    </section>
+
+    <main class="flex-1 h-full bg-[#f8fafc] dark:bg-[#020617] flex flex-col transition-colors duration-200" id="chat-window-container">
+        
+        <div id="chat-welcome-screen" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <div class="w-16 h-16 bg-[#f0f4ff] dark:bg-blue-950/30 text-[#2563eb] dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm animate-bounce-short">
+                <i data-lucide="messages-square" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Bienvenue sur Kadea Chat</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mt-1">Sélectionnez ou recherchez une discussion dans le panneau latéral pour commencer à envoyer des messages.</p>
+        </div>
+
+        <div id="chat-active-box" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+            <header class="h-16 bg-white dark:bg-[#090d1f] border-b border-slate-200 dark:border-slate-800/60 px-6 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <img src="" alt="Contact Avatar" class="w-9 h-9 rounded-full object-cover" id="active-contact-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'">
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-xs text-slate-900 dark:text-slate-100" id="active-contact-name">...</h3>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500" id="active-contact-status">En ligne</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-1 text-slate-400 dark:text-slate-500">
+                    <button class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg transition" title="Appel vidéo"><i data-lucide="video" class="w-4 h-4"></i></button>
+                    <button class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg transition" title="Appel vocal"><i data-lucide="phone" class="w-4 h-4"></i></button>
+                    <button class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg transition" title="Plus d'options"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                </div>
+            </header>
+
+            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-transparent">
+            </div>
+
+            <footer class="p-4 bg-white dark:bg-[#090d1f] border-t border-slate-200 dark:border-slate-800/60 flex-shrink-0">
+                <form id="chat-form" class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-1 text-slate-400 dark:text-slate-500">
+                        <button type="button" class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-600 dark:hover:text-slate-300 rounded-xl transition" title="Ajouter"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                        <button type="button" class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-600 dark:hover:text-slate-300 rounded-xl transition" title="Emojis"><i data-lucide="smile" class="w-5 h-5"></i></button>
+                    </div>
+                    <div class="flex-1 relative flex items-center">
+                        <input type="text" id="message-input" autocomplete="off" placeholder="Écrire un message..." class="w-full py-3 pl-4 pr-16 bg-[#f0f4ff]/60 dark:bg-slate-950 dark:text-slate-100 text-xs border border-transparent rounded-xl outline-none transition-all focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10" required>
+                        <span id="char-counter" class="absolute right-3 text-[10px] text-slate-400 dark:text-slate-500 font-medium select-none">0 / 500</span>
+                    </div>
+                    <button type="submit" class="p-3 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl transition shadow-sm flex justify-center items-center flex-shrink-0">
+                        <i data-lucide="send-horizontal" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </main>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+    
+    <script type="module" src="assets/js/pages/chat.js"></script>
+<div id="new-chat-modal" class="hidden fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#090d1f] rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200 border border-transparent dark:border-slate-800/60">
+
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-slate-100">Nouvelle discussion</h3>
+            <button id="close-new-chat-modal" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-lg transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <div class="p-3 border-b border-slate-50 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/40">
+            <div class="relative flex items-center">
+                <i data-lucide="search" class="absolute left-3 text-slate-400 w-3.5 h-3.5 pointer-events-none"></i>
+                <input type="text" id="search-contacts" placeholder="Rechercher un utilisateur..." class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 dark:text-slate-100 text-xs rounded-lg outline-none border border-slate-200 dark:border-slate-800 focus:border-[#2563eb] focus:ring-2 focus:ring-blue-500/5 transition-all">
+            </div>
+        </div>
+
+        <div id="contacts-list" class="flex-1 overflow-y-auto p-2 min-h-[250px] max-h-[350px] divide-y divide-slate-50 no-scrollbar">
+            <div id="contacts-loader" class="flex flex-col items-center justify-center py-12 text-slate-400">
+                <div class="w-5 h-5 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin mb-2"></div>
+                <p class="text-[11px]">Chargement des utilisateurs...</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

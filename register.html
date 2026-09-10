@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - Kadea Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full max-w-[440px] flex flex-col items-center">
+        
+        <div class="text-center mb-6 flex flex-col items-center">
+            <div class="bg-[#2563eb] p-2.5 rounded-xl shadow-sm mb-2 w-12 h-12 flex items-center justify-center">
+                <img src="assets/icons/logo chat-kadea.jfif" alt="logo chat-kadea" class="w-6 h-6 object-contain invert">
+            </div>
+            <h2 class="text-[#2563eb] text-2xl font-bold tracking-tight">Kadea Chat</h2>
+        </div>
+
+        <form id="registerForm" class="w-full bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-4">
+            
+            <div>
+                <h3 class="text-slate-800 text-xl font-semibold mb-1">Create Account</h3>
+                <p class="text-slate-500 text-sm">Join the community and start chatting.</p>
+            </div>
+
+            <div>
+                <label for="nom" class="block text-slate-500 text-xs font-medium mb-1.5">Full name</label>
+                <div class="relative flex items-center">
+                    <i data-lucide="user" class="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none"></i>
+                    <input type="text" id="nom" name="fullName" placeholder="John Doe"
+                        class="w-full bg-[#f0f4ff] border border-transparent rounded-xl py-3 px-10 text-sm text-slate-800 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
+                </div>
+            </div>
+
+            <div>
+                <label for="email" class="block text-slate-500 text-xs font-medium mb-1.5">Email Address</label>
+                <div class="relative flex items-center">
+                    <i data-lucide="mail" class="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none"></i>
+                    <input type="email" id="email" name="email" placeholder="name@example.com"
+                        class="w-full bg-[#f0f4ff] border border-transparent rounded-xl py-3 px-10 text-sm text-slate-800 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
+                </div>
+            </div>
+            
+            <div>
+                <label for="password" class="block text-slate-500 text-xs font-medium mb-1.5">Password</label>
+                <div class="relative flex items-center">
+                    <i data-lucide="lock" class="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none"></i>
+                    <input type="password" id="password" name="password" placeholder="••••••••"
+                        class="w-full bg-[#f0f4ff] border border-transparent rounded-xl py-3 px-10 text-sm text-slate-800 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
+                    <i id="toggle-password-reg" data-lucide="eye" class="absolute right-3.5 text-slate-400 w-4 h-4 cursor-pointer hover:text-slate-600 transition"></i></div>
+            </div>
+            
+            <div>
+                <label for="confirm-password" class="block text-slate-500 text-xs font-medium mb-1.5">Confirm Password</label>
+                <div class="relative flex items-center">
+                    <i data-lucide="refresh-cw" class="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none"></i>
+                    <input type="password" id="confirm-password" name="confirmPassword" placeholder="••••••••"
+                        class="w-full bg-[#f0f4ff] border border-transparent rounded-xl py-3 px-10 text-sm text-slate-800 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
+                    <i id="toggle-confirm-password-reg" data-lucide="eye" class="absolute right-3.5 text-slate-400 w-4 h-4 cursor-pointer hover:text-slate-600"></i>
+                </div>
+            </div>
+
+            <div id="message" class="hidden rounded-lg p-3 text-sm"></div>
+
+            <button type="submit" 
+                class="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-medium py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-colors !mt-6">
+                Create Account 
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+
+            <p class="text-[11px] text-slate-500 text-center leading-relaxed !mt-4">
+                By signing up, you agree to our <a href="#" class="text-[#2563eb] font-medium hover:underline">Terms of Service</a> and <a href="#" class="text-[#2563eb] font-medium hover:underline">Privacy Policy</a>.
+            </p>
+        </form>
+
+        <p class="text-sm text-slate-500 text-center mt-5">
+            Already have an account? <a href="index.html" class="text-[#2563eb] font-medium hover:underline">Log in</a>
+        </p>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+    <script type="module" src="assets/js/auth/register.js"></script>
+</body>
+</html>

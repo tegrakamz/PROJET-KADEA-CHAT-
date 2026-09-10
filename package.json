@@ -1,0 +1,13 @@
+{
+  "name": "kadea-chat",
+  "version": "1.0.0",
+  "description": "Prototype frontend de messagerie Kadea Chat (JavaScript Vanilla + API REST)",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build:css": "npx tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
