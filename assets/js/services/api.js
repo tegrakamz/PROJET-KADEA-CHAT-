@@ -1,94 +1,64 @@
-// Service de communication avec l'API
+// Client HTTP pour communiquer avec l'API du backend
 
 import { CONFIG } from "../config/config.js";
 import { getToken, clearSession } from "../utils/storage.js";
 
-
+// Prépare les en-têtes avec la clé d'API et le token si présent
 function buildHeaders() {
-
     const headers = {
         "Content-Type": "application/json",
         "x-api-key": CONFIG.API_KEY
     };
 
     const token = getToken();
-
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
 
     return headers;
-
 }
 
-
+// Fonction centrale d'exécution des requêtes HTTP avec gestion des erreurs
 export async function apiRequest(
     endpoint,
     method = "GET",
     data = null
 ) {
-
     const controller = new AbortController();
-
     const timeout = setTimeout(() => {
-
         controller.abort();
-
     }, CONFIG.REQUEST_TIMEOUT || 15000);
 
     const options = {
-
         method,
-
         headers: buildHeaders(),
-
         signal: controller.signal
-
     };
 
     if (data !== null) {
-
         options.body = JSON.stringify(data);
-
     }
 
     try {
-
         const response = await fetch(
-
             `${CONFIG.API_URL}${endpoint}`,
-
             options
-
         );
 
         clearTimeout(timeout);
 
         let result = {};
-
         try {
-
             result = await response.json();
-
         } catch {
-
             result = {};
-
         }
 
         if (!response.ok) {
-
-            // ==========================================
-            // Cas 1 : Utilisateur non authentifié (401)
-            // ou accès refusé (403)
-            // -> On nettoie la session et on renvoie
-            //    l'utilisateur vers la page de connexion.
-            // ==========================================
+            // Session expirée ou invalide : on déconnecte et on redirige vers le login
             if (response.status === 401 || response.status === 403) {
-
                 clearSession();
 
-                // On évite de rediriger en boucle si on est déjà sur index.html
                 const currentPage = window.location.pathname.split("/").pop();
                 if (currentPage !== "index.html" && currentPage !== "") {
                     window.location.href = "index.html";
@@ -98,79 +68,56 @@ export async function apiRequest(
                     result.message ||
                     "Votre session a expiré. Veuillez vous reconnecter."
                 );
-
             }
 
-            // ==========================================
-            // Cas 2 : Ressource introuvable (404)
-            // Ex : conversation ou message inexistant
-            // ==========================================
+            // Ressource introuvable
             if (response.status === 404) {
-
                 const notFoundError = new Error(
                     result.message ||
                     "La ressource demandée est introuvable."
                 );
                 notFoundError.status = 404;
                 throw notFoundError;
-
             }
 
-            // ==========================================
-            // Cas 3 : Validation (422)
-            // ==========================================
-            if (response.status === 422) {
-
-                const firstError =
+            // Erreur de validation des données envoyées (ex: formulaire incomplet)
+            if (response.status === 400 || response.status === 422) {
+                const errorMsg =
                     Array.isArray(result.errors) && result.errors.length > 0
-                        ? (result.errors[0].message || result.errors[0])
+                        ? result.errors.map(err => err.message || err).join(", ")
                         : null;
 
-                throw new Error(
-                    firstError ||
+                const validationError = new Error(
+                    errorMsg ||
                     result.message ||
                     "Les données envoyées ne sont pas valides."
                 );
-
+                validationError.status = response.status;
+                throw validationError;
             }
 
-            // ==========================================
-            // Cas 4 : Trop de requêtes (429)
-            // ==========================================
+            // Limite de requêtes atteinte
             if (response.status === 429) {
-
                 throw new Error(
                     "Trop de requêtes envoyées. Veuillez patienter quelques instants."
                 );
-
             }
 
-            // ==========================================
-            // Cas 5 : Service en maintenance (503)
-            // ==========================================
+            // Serveur temporairement indisponible
             if (response.status === 503) {
-
                 throw new Error(
                     "Le service est actuellement en maintenance. Réessayez plus tard."
                 );
-
             }
 
-            // ==========================================
-            // Cas 6 : Erreur serveur (500 et plus)
-            // ==========================================
+            // Erreur interne du serveur
             if (response.status >= 500) {
-
                 throw new Error(
                     "Le serveur rencontre un problème. Veuillez réessayer plus tard."
                 );
-
             }
 
-            // ==========================================
-            // Cas 7 : Autre erreur renvoyée par l'API
-            // (ex : mot de passe incorrect, etc.)
-            // ==========================================
+            // Message d'erreur renvoyé par l'API
             const apiError = new Error(
                 result.message ||
                 "Une erreur est survenue."
@@ -178,75 +125,41 @@ export async function apiRequest(
             apiError.status = response.status;
             throw apiError;
         }
+
         return result;
 
     } catch (error) {
-
         clearTimeout(timeout);
 
         if (error.name === "AbortError") {
-
-            throw new Error(
-                "Le serveur met trop de temps à répondre."
-            );
-
+            throw new Error("Le serveur met trop de temps à répondre.");
         }
 
         if (error instanceof TypeError) {
-
-            throw new Error(
-                "Impossible de contacter le serveur. Vérifiez votre connexion Internet."
-            );
-
+            throw new Error("Impossible de contacter le serveur. Vérifiez votre connexion Internet.");
         }
 
         throw error;
-
     }
-
 }
 
-/**
- * Requête GET
- */
+// Raccourcis pour les verbes HTTP usuels
 export function apiGet(endpoint) {
-
     return apiRequest(endpoint, "GET");
-
 }
 
-/**
- * Requête POST
- */
 export function apiPost(endpoint, data) {
-
     return apiRequest(endpoint, "POST", data);
-
 }
 
-/**
- * Requête PUT
- */
 export function apiPut(endpoint, data) {
-
     return apiRequest(endpoint, "PUT", data);
-
 }
 
-/**
- * Requête PATCH
- */
 export function apiPatch(endpoint, data) {
-
     return apiRequest(endpoint, "PATCH", data);
-
 }
 
-/**
- * Requête DELETE
- */
 export function apiDelete(endpoint) {
-
     return apiRequest(endpoint, "DELETE");
-
 }

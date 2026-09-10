@@ -1,32 +1,21 @@
- // KADEA CHAT
-// Composant Toast (notifications visuelles)
-//
-// Sert a afficher clairement a l'utilisateur les erreurs
-// et messages de succes (cahier des charges, partie 4 :
-// "Les erreurs doivent etre clairement affichees a
-// l'utilisateur").
-//
-// Le conteneur #toast-container existe deja dans chat.html.
- 
+// Gestion des messages de notification temporaires (toasts)
+
 /**
- * Affiche une notification temporaire en bas a droite de l'ecran.
- *
- * @param {string} message - Le texte a afficher
- * @param {"error"|"success"|"info"} type - Le style de la notification
- * @param {number} duration - Duree d'affichage en millisecondes
+ * Affiche une alerte temporaire sur l'écran.
+ * @param {string} message - Texte du message
+ * @param {"error"|"success"|"info"} type - Type de notification (défaut : error)
+ * @param {number} duration - Durée visible en ms (défaut : 4000)
  */
 export function showToast(message, type = "error", duration = 4000) {
-
     const container = document.getElementById("toast-container");
 
-    // Si le conteneur n'existe pas sur la page (securite),
-    // on se rabat sur une alerte classique pour ne pas perdre l'information.
+    // Repli de secours si le conteneur n'est pas présent dans la page
     if (!container) {
         alert(message);
         return;
     }
 
-    // Couleurs et icones selon le type de message
+    // Variantes graphiques et icônes
     const styles = {
         error: {
             bg: "bg-red-50 border-red-200 text-red-700",
@@ -45,7 +34,6 @@ export function showToast(message, type = "error", duration = 4000) {
     const style = styles[type] || styles.error;
 
     const toast = document.createElement("div");
-
     toast.className = `
         pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl
         border shadow-md text-xs font-medium max-w-xs
@@ -60,20 +48,19 @@ export function showToast(message, type = "error", duration = 4000) {
 
     container.appendChild(toast);
 
-    // Rafraichir les icones Lucide pour le toast nouvellement ajoute
     if (window.lucide) {
         window.lucide.createIcons();
     }
 
-    // Petite animation d'apparition (on retire les classes de depart)
+    // Petite animation d'entrée
     requestAnimationFrame(() => {
         toast.classList.remove("opacity-0", "translate-y-2");
     });
 
-    // Disparition automatique apres "duration" millisecondes
+    // Disparition et suppression de l'élément après expiration
     setTimeout(() => {
         toast.classList.add("opacity-0", "translate-y-2");
         setTimeout(() => toast.remove(), 300);
     }, duration);
-
 }
+

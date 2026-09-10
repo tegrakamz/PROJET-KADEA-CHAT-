@@ -1,0 +1,8 @@
+{
+  "name": "Kadea Chat",
+  "description": "Application de messagerie instantanée Kadea Chat avec authentification, conversations en temps réel et gestion de profil",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

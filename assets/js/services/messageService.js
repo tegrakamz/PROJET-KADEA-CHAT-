@@ -1,7 +1,4 @@
-// ======================================================
-// KADEA CHAT
-// Service de gestion des messages
-// ======================================================
+// Service d'envoi, de lecture et de gestion des messages
 
 import {
     apiGet,
@@ -10,89 +7,33 @@ import {
     apiPatch
 } from "./api.js";
 
-
-// ======================================================
-// Endpoints API
-// ======================================================
-
 const MESSAGE_ENDPOINTS = {
-
-    /**
-     * Récupération des messages d'une conversation
-     * GET /conversations/:conversationId/messages
-     */
-    LIST: (conversationId) =>
-        `/conversations/${conversationId}/messages`,
-
-    /**
-     * Envoyer un message
-     * POST /conversations/:conversationId/messages
-     */
-    SEND: (conversationId) =>
-        `/conversations/${conversationId}/messages`
-
+    LIST: (conversationId) => `/conversations/${conversationId}/messages`,
+    SEND: (conversationId) => `/conversations/${conversationId}/messages`
 };
 
-
-// ======================================================
-// Extraction générique du tableau de messages
-// L'API renvoie { success, message, data: [...] }
-// ======================================================
-
+// Récupère la liste brute des messages d'une réponse API
 function extractMessages(response) {
-
-    if (Array.isArray(response)) {
-        return response;
-    }
-
-    if (response && Array.isArray(response.data)) {
-        return response.data;
-    }
-
-    if (response && response.data && Array.isArray(response.data.messages)) {
-        return response.data.messages;
-    }
-
-    if (response && Array.isArray(response.messages)) {
-        return response.messages;
-    }
-
+    if (Array.isArray(response)) return response;
+    if (response?.data && Array.isArray(response.data)) return response.data;
+    if (response?.data?.messages && Array.isArray(response.data.messages)) return response.data.messages;
+    if (Array.isArray(response?.messages)) return response.messages;
     return [];
-
 }
 
-
-// ======================================================
-// Récupérer les messages d'une conversation
-// GET /conversations/:id/messages
-// ======================================================
-
+// Récupère les messages d'une discussion, classés par ordre chronologique
 export async function getMessages(conversationId) {
-
     if (!conversationId) {
-        throw new Error(
-            "L'identifiant de la conversation est obligatoire."
-        );
+        throw new Error("L'identifiant de la conversation est obligatoire.");
     }
 
-    const response = await apiGet(
-        MESSAGE_ENDPOINTS.LIST(conversationId)
-    );
-
+    const response = await apiGet(MESSAGE_ENDPOINTS.LIST(conversationId));
     const messages = extractMessages(response);
-
     return sortMessages(messages);
-
 }
 
-
-// ======================================================
-// Envoyer un message
-// POST /conversations/:id/messages
-// ======================================================
-
+// Envoie un nouveau message dans une discussion
 export async function sendMessage(conversationId, content) {
-
     if (!conversationId) {
         throw new Error("Conversation invalide.");
     }
@@ -105,23 +46,12 @@ export async function sendMessage(conversationId, content) {
         content: content.trim()
     };
 
-    const response = await apiPost(
-        MESSAGE_ENDPOINTS.SEND(conversationId),
-        data
-    );
-
-    return (response && response.data) ? response.data : response;
-
+    const response = await apiPost(MESSAGE_ENDPOINTS.SEND(conversationId), data);
+    return response?.data ? response.data : response;
 }
 
-
-// ======================================================
-// Modifier un message (Bonus)
-// PATCH /messages/:id
-// ======================================================
-
+// Modifie le contenu d'un message existant
 export async function editMessage(messageId, content) {
-
     if (!messageId) {
         throw new Error("Identifiant du message obligatoire.");
     }
@@ -130,78 +60,42 @@ export async function editMessage(messageId, content) {
         throw new Error("Le message ne peut pas être vide.");
     }
 
-    const response = await apiPatch(
-        `/messages/${messageId}`,
-        { content: content.trim() }
-    );
+    const response = await apiPatch(`/messages/${messageId}`, {
+        content: content.trim()
+    });
 
-    return (response && response.data) ? response.data : response;
-
+    return response?.data ? response.data : response;
 }
 
-
-// ======================================================
-// Supprimer un message
-// DELETE /messages/:id
-// Bonus
-// ======================================================
-
+// Supprime un message par son identifiant
 export async function deleteMessage(messageId) {
-
     if (!messageId) {
         throw new Error("Identifiant du message obligatoire.");
     }
-
     return await apiDelete(`/messages/${messageId}`);
-
 }
 
-
-// ======================================================
-// Trier les messages
-// Les plus anciens vers les plus récents
-// ======================================================
-
+// Classe les messages du plus ancien au plus récent
 export function sortMessages(messages) {
-
     return [...messages].sort((a, b) => {
-
         const dateA = new Date(a.createdAt || a.created_at || 0);
         const dateB = new Date(b.createdAt || b.created_at || 0);
-
         return dateA - dateB;
-
     });
-
 }
 
-
-// ======================================================
-// Formater l'heure d'un message
-// ======================================================
-
+// Formate l'heure d'envoi d'un message (HH:MM)
 export function formatMessageTime(date) {
-
     if (!date) return "";
-
     return new Date(date).toLocaleTimeString("fr-FR", {
         hour: "2-digit",
         minute: "2-digit"
     });
-
 }
 
-
-// ======================================================
-// Vérifier si le message appartient
-// à l'utilisateur connecté
-// ======================================================
-
+// Vérifie si le message a été envoyé par l'utilisateur connecté
 export function isMyMessage(message, userId) {
-
-    if (!message || !userId) {
-        return false;
-    }
+    if (!message || !userId) return false;
 
     const senderId =
         message.senderId ||
@@ -210,73 +104,40 @@ export function isMyMessage(message, userId) {
         (message.user && message.user.id);
 
     return String(senderId) === String(userId);
-
 }
 
-
-// ======================================================
-// Obtenir le contenu du message
-// Gestion des différentes réponses API
-// ======================================================
-
+// Récupère le texte du message quel que soit le champ utilisé par l'API
 export function getMessageContent(message) {
-
     return (
         message.content ||
         message.text ||
         message.message ||
         ""
     );
-
 }
 
-
-// ======================================================
-// Obtenir l'expéditeur
-// ======================================================
-
+// Récupère l'auteur du message
 export function getSender(message) {
-
     return (
         message.sender ||
         message.user ||
         { name: "Utilisateur" }
     );
-
 }
 
-
-// ======================================================
-// Recherche dans les messages
-// Bonus
-// ======================================================
-
+// Filtrage de messages par mot-clé
 export function searchMessages(messages, keyword) {
-
-    if (!keyword) {
-        return messages;
-    }
+    if (!keyword) return messages;
 
     const search = keyword.toLowerCase().trim();
-
     return messages.filter(message => {
         const content = getMessageContent(message);
         return content.toLowerCase().includes(search);
     });
-
 }
 
-
-// ======================================================
-// Dernier message d'une conversation
-// ======================================================
-
+// Récupère le dernier message de la liste
 export function getLastMessage(messages) {
-
-    if (!messages || messages.length === 0) {
-        return null;
-    }
-
+    if (!messages || messages.length === 0) return null;
     return messages[messages.length - 1];
-
 }

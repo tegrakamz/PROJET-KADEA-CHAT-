@@ -1,46 +1,29 @@
-// ======================================================
-// KADEA CHAT
-// Utilitaires de gestion du Local Storage
-// (Token JWT, utilisateur connecté, thème, dernière conversation)
-// ======================================================
+// Gestion du stockage local (session, profil, préférences)
 
 const TOKEN_KEY = "kadea_token";
 const USER_KEY = "kadea_user";
 const THEME_KEY = "theme";
 const LAST_CONVERSATION_KEY = "kadea_last_conversation";
 
-// ======================================================
-// Token JWT
-// ======================================================
+// --- Token JWT ---
 
-/**
- * Sauvegarder le token JWT reçu après connexion
- * @param {string} token
- */
 export function saveToken(token) {
     try {
         localStorage.setItem(TOKEN_KEY, token);
     } catch (error) {
-        console.warn("Impossible d'écrire dans le localStorage :", error);
+        console.warn("Impossible d'enregistrer le token :", error);
     }
 }
 
-/**
- * Récupérer le token JWT sauvegardé
- * @returns {string|null}
- */
 export function getToken() {
     try {
         return localStorage.getItem(TOKEN_KEY);
     } catch (error) {
-        console.warn("Impossible de lire le localStorage :", error);
+        console.warn("Impossible de lire le token :", error);
         return null;
     }
 }
 
-/**
- * Supprimer le token JWT
- */
 export function removeToken() {
     try {
         localStorage.removeItem(TOKEN_KEY);
@@ -49,39 +32,40 @@ export function removeToken() {
     }
 }
 
-// ======================================================
-// Utilisateur connecté
-// ======================================================
+// --- Profil utilisateur ---
 
-/**
- * Sauvegarder les informations de l'utilisateur connecté
- * @param {Object} user
- */
 export function saveUser(user) {
     try {
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        if (!user) {
+            localStorage.removeItem(USER_KEY);
+            return;
+        }
+        // Extraction du profil si l'API le renvoie encapsulé
+        let normalized = user;
+        if (normalized.data?.user) normalized = normalized.data.user;
+        else if (normalized.user) normalized = normalized.user;
+        else if (normalized.data) normalized = normalized.data;
+        localStorage.setItem(USER_KEY, JSON.stringify(normalized));
     } catch (error) {
-        console.warn("Impossible de sauvegarder l'utilisateur :", error);
+        console.warn("Impossible d'enregistrer l'utilisateur :", error);
     }
 }
 
-/**
- * Récupérer les informations de l'utilisateur connecté
- * @returns {Object|null}
- */
 export function getUser() {
     try {
         const raw = localStorage.getItem(USER_KEY);
-        return raw ? JSON.parse(raw) : null;
+        if (!raw) return null;
+        let parsed = JSON.parse(raw);
+        if (parsed?.data?.user) parsed = parsed.data.user;
+        else if (parsed?.user) parsed = parsed.user;
+        else if (parsed?.data) parsed = parsed.data;
+        return parsed;
     } catch (error) {
         console.warn("Impossible de lire l'utilisateur :", error);
         return null;
     }
 }
 
-/**
- * Supprimer les informations de l'utilisateur connecté
- */
 export function removeUser() {
     try {
         localStorage.removeItem(USER_KEY);
@@ -90,39 +74,25 @@ export function removeUser() {
     }
 }
 
-// ======================================================
-// Session complète (déconnexion / erreurs 401-403)
-// ======================================================
+// --- Session complète ---
 
-/**
- * Supprimer toutes les données de session enregistrées localement
- */
+// Nettoie toutes les données liées à la session courante
 export function clearSession() {
     removeToken();
     removeUser();
     removeLastConversation();
 }
 
-// ======================================================
-// Dernière conversation ouverte (Bonus)
-// ======================================================
+// --- Dernière conversation active ---
 
-/**
- * Sauvegarder l'identifiant de la dernière conversation ouverte
- * @param {string|number} conversationId
- */
 export function saveLastConversation(conversationId) {
     try {
         localStorage.setItem(LAST_CONVERSATION_KEY, String(conversationId));
     } catch (error) {
-        console.warn("Impossible de sauvegarder la dernière conversation :", error);
+        console.warn("Impossible d'enregistrer la dernière conversation :", error);
     }
 }
 
-/**
- * Récupérer l'identifiant de la dernière conversation ouverte
- * @returns {string|null}
- */
 export function getLastConversation() {
     try {
         return localStorage.getItem(LAST_CONVERSATION_KEY);
@@ -131,9 +101,6 @@ export function getLastConversation() {
     }
 }
 
-/**
- * Supprimer la dernière conversation mémorisée
- */
 export function removeLastConversation() {
     try {
         localStorage.removeItem(LAST_CONVERSATION_KEY);
@@ -142,26 +109,16 @@ export function removeLastConversation() {
     }
 }
 
-// ======================================================
-// Thème (Sombre / Clair)
-// ======================================================
+// --- Thème (clair / sombre) ---
 
-/**
- * Sauvegarder la préférence de thème
- * @param {"dark"|"light"} theme
- */
 export function saveTheme(theme) {
     try {
         localStorage.setItem(THEME_KEY, theme);
     } catch (error) {
-        console.warn("Impossible de sauvegarder le thème :", error);
+        console.warn("Impossible d'enregistrer le thème :", error);
     }
 }
 
-/**
- * Récupérer la préférence de thème sauvegardée
- * @returns {"dark"|"light"|null}
- */
 export function getTheme() {
     try {
         return localStorage.getItem(THEME_KEY);
@@ -169,3 +126,4 @@ export function getTheme() {
         return null;
     }
 }
+

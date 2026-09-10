@@ -1,41 +1,19 @@
-/**
- * ==========================================
- * Validation des formulaires
- * ==========================================
- */
+// Validation des champs de formulaires (connexion, inscription, profil)
 
-/**
- * Vérifie si une adresse e-mail est valide.
- * @param {string} email
- * @returns {boolean}
- */
+// Vérifie le format basique d'une adresse email
 export function isValidEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email.trim());
 }
 
-/**
- * Vérifie la robustesse du mot de passe.
- * Minimum :
- * - 8 caractères
- * - une lettre
- * - un chiffre
- *
- * @param {string} password
- * @returns {boolean}
- */
+// Vérifie que le mot de passe fait au moins 8 caractères et contient au moins une lettre et un chiffre
 export function isStrongPassword(password) {
     const regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     return regex.test(password);
 }
 
-/**
- * Validation du formulaire d'inscription.
- * @param {Object} data
- * @returns {string|null}
- */
+// Contrôle les données du formulaire d'inscription
 export function validateRegister(data) {
-
     const fullName = data.fullName.trim();
     const email = data.email.trim();
 
@@ -59,6 +37,7 @@ export function validateRegister(data) {
         return "Veuillez saisir un mot de passe.";
     }
 
+
     if (!isStrongPassword(data.password)) {
         return "Le mot de passe doit contenir au moins 8 caractères, une lettre et un chiffre.";
     }
@@ -74,11 +53,7 @@ export function validateRegister(data) {
     return null;
 }
 
-/**
- * Validation du formulaire de connexion.
- * @param {Object} data
- * @returns {string|null}
- */
+// Contrôle les données du formulaire de connexion
 export function validateLogin(data) {
 
     const email = data.email.trim();

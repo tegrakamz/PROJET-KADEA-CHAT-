@@ -1,84 +1,30 @@
-// ======================================================
-// KADEA CHAT
-// Service d'authentification
-// ======================================================
+// Requêtes d'authentification auprès de l'API
 
 import { apiGet, apiPost } from "./api.js";
 
-// ======================================================
-// Endpoints
-// ======================================================
-
 const AUTH_ENDPOINTS = {
-
     REGISTER: "/auth/register",
-
     LOGIN: "/auth/login",
-
     ME: "/auth/me",
-
     CHANGE_PASSWORD: "/auth/change-password"
-
 };
 
-// ======================================================
-// Inscription
-// ======================================================
-
+// Inscription d'un nouveau compte
 export function register(userData) {
-
-    return apiPost(
-
-        AUTH_ENDPOINTS.REGISTER,
-
-        userData
-
-    );
-
+    return apiPost(AUTH_ENDPOINTS.REGISTER, userData);
 }
 
-// ======================================================
-// Connexion
-// ======================================================
-
+// Connexion d'un utilisateur existant
 export function login(credentials) {
-
-    return apiPost(
-
-        AUTH_ENDPOINTS.LOGIN,
-
-        credentials
-
-    );
-
+    return apiPost(AUTH_ENDPOINTS.LOGIN, credentials);
 }
 
-// ======================================================
-// Profil utilisateur connecté
-// ======================================================
-
+// Récupération des informations de l'utilisateur connecté
 export function getCurrentUser() {
-
-    return apiGet(
-
-        AUTH_ENDPOINTS.ME
-
-    );
-
+    return apiGet(AUTH_ENDPOINTS.ME);
 }
 
-// ======================================================
-// Changement du mot de passe
-// ======================================================
-
+// Mise à jour du mot de passe
 export function changePassword(passwordData) {
-
-    return apiPost(
-
-        AUTH_ENDPOINTS.CHANGE_PASSWORD,
-
-        passwordData
-
-    );
-
+    return apiPost(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData);
 }
