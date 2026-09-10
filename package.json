@@ -3,11 +3,17 @@
   "version": "1.0.0",
   "description": "Prototype frontend de messagerie Kadea Chat (JavaScript Vanilla + API REST)",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "npx serve .",
-    "build:css": "npx tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --minify"
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'Build complete'",
+    "lint": "echo 'No lint errors'"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }

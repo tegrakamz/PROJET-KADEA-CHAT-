@@ -1,39 +1,31 @@
-// ======================================================
-// KADEA CHAT
-// Contrôleur de la page Profil - Version Unifiée & Corrigée
-// ======================================================
+// Contrôleur de la page de profil utilisateur
 
 import { logoutUser } from "../auth/logout.js";
-import { getUser } from "../utils/storage.js";
+import { getUser, saveUser } from "../utils/storage.js";
 import { changePassword, getCurrentUser } from "../services/authService.js";
 import { isStrongPassword } from "../utils/validator.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-    // Initialisation des icônes Lucide de manière sécurisée
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
 
-    // ======================================================
-    // 1. Dynamisation des informations du profil
-    // ======================================================
+    // Affichage des données du profil
     renderUserData();
 
-    // Tentative de mise à jour des données en arrière-plan depuis l'API
+    // Actualisation silencieuse des infos depuis le serveur
     try {
         const freshUserRes = await getCurrentUser();
         if (freshUserRes && freshUserRes.success && freshUserRes.data) {
-            localStorage.setItem("user", JSON.stringify(freshUserRes.data));
-            renderUserData(); // Re-rend les données à jour
+            saveUser(freshUserRes.data?.user || freshUserRes.data);
+            renderUserData();
         }
     } catch (e) {
-        console.warn("Impossible de synchroniser les infos fraîches de l'API :", e);
+        console.warn("Impossible de synchroniser les informations du profil :", e);
     }
 
-    // ======================================================
-    // 2. Gestion de la navigation et de la déconnexion
-    // ======================================================
+    // Navigation et déconnexion
     const btnChat = document.getElementById('btn-nav-chat');
     const brand = document.getElementById('brand-title');
     const logoForum = document.getElementById('logo-forum');
@@ -58,11 +50,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Handler de déconnexion unifié
     const handleLogout = () => {
         const confirmed = confirm("Voulez-vous vraiment vous déconnecter ?");
         if (confirmed) {
-            logoutUser(); // Nettoie le localStorage et redirige proprement
+            logoutUser();
         }
     };
 
@@ -73,13 +64,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         profileLogout.addEventListener('click', handleLogout);
     }
 
-    // ======================================================
-    // 3. Bascule du mode Sombre / Clair (Toggle Theme)
-    // ======================================================
+    // Bascule du mode clair / sombre
     const themeToggleBtn = document.getElementById("btn-theme-toggle");
     const themeToggleIcon = document.getElementById("theme-toggle-icon");
 
-    // Met à jour l'icône Lucide (soleil si sombre, lune si clair)
     const updateThemeIcon = (isDark) => {
         if (themeToggleIcon) {
             themeToggleIcon.setAttribute("data-lucide", isDark ? "sun" : "moon");
@@ -89,27 +77,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Synchronise l'icône au chargement initial
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
     updateThemeIcon(isCurrentlyDark);
 
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener("click", () => {
             const isDark = document.documentElement.classList.toggle("dark");
-            
-            if (isDark) {
-                localStorage.setItem("theme", "dark");
-            } else {
-                localStorage.setItem("theme", "light");
-            }
-            
+            localStorage.setItem("theme", isDark ? "dark" : "light");
             updateThemeIcon(isDark);
         });
     }
 
-    // ======================================================
-    // 4. Gestion du Modal de changement de mot de passe
-    // ======================================================
+    // Fenêtre modale de changement de mot de passe
     const modal = document.getElementById("modal-change-password");
     const trigger = document.getElementById("btn-change-password-trigger");
     const closeModalBtn = document.getElementById("btn-close-modal");
@@ -179,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     showModalMsg(response.message || "Erreur lors de la modification.", "error");
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Erreur changement de mot de passe :", error);
                 showModalMsg(error.message || "Une erreur est survenue, veuillez réessayer.", "error");
             } finally {
                 submitBtn.disabled = false;
@@ -189,16 +168,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// ======================================================
-// Fonctions utilitaires de rendu & messages d'erreurs
-// ======================================================
-
+// Affiche les informations de l'utilisateur sur la page
 function renderUserData() {
     const user = getUser();
-    if (!user) {
-        console.warn("Aucun utilisateur connecté trouvé.");
-        return;
-    }
+    if (!user) return;
 
     const nameElements = document.querySelectorAll(".user-fullname");
     const emailElements = document.querySelectorAll(".user-email");
@@ -237,6 +210,7 @@ function renderUserData() {
     }
 }
 
+// Notifications dans la modale
 function showModalMsg(text, type = "error") {
     const modalMessage = document.getElementById("modal-message");
     if (!modalMessage) return;

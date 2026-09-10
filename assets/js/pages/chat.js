@@ -1,10 +1,6 @@
-// ======================================================
-// Kadea Chat
-// Gestion principale de la page Chat
-// ======================================================
+// Contrôleur de la messagerie
 
 import { requireAuth } from "../auth/authGuard.js";
-
 import {
     getUser,
     saveUser,
@@ -12,7 +8,6 @@ import {
     removeToken,
     removeUser
 } from "../utils/storage.js";
-
 import { getCurrentUser } from "../services/authService.js";
 import {
     getConversations,
@@ -27,114 +22,65 @@ import {
     getUsers,
     createConversation
 } from "../services/conversationService.js";
-
 import {
     getMessages,
     sendMessage,
     editMessage,
     deleteMessage
 } from "../services/messageService.js";
-
 import { CONFIG } from "../config/config.js";
 import { showToast } from "../components/toast.js";
 import { truncate } from "../utils/helpers.js";
 
-
-// ======================================================
-// Variables globales
-// ======================================================
-
+// Variables d'état
 let currentConversation = null;
 let currentUser = null;
-let allConversations = []; // Stockage pour la recherche et le filtre en local
-let allUsers = [];         // Stockage local des utilisateurs pour la recherche dans la modal
-let pollingInterval = null; // Rafraîchissement automatique des messages (bonus "temps réel")
+let allConversations = [];
+let allUsers = [];
+let pollingInterval = null;
 
-
-// ======================================================
-// Initialisation
-// ======================================================
-
+// Initialisation au chargement de la page
 document.addEventListener("DOMContentLoaded", async () => {
-
     requireAuth();
 
     currentUser = getUser();
-    console.log("Utilisateur du localStorage :", currentUser);
 
-    // =====================================
-    // Si le profil n'est pas encore enregistré,
-    // on le récupère automatiquement via l'API
-    // =====================================
-
-    if (!currentUser) {
-
+    // Si le profil en cache local est incomplet, on interroge l'API
+    if (!currentUser || !currentUser.id) {
         try {
-
             const response = await getCurrentUser();
-
-                console.log("Réponse API /auth/me :", response);
-
-            const user = response.user || response.data || response;
+            const user = response?.data?.user || response?.user || response?.data || response;
 
             if (!user || !user.id) {
-
-                console.error("Utilisateur invalide :", response);
-
                 clearSession();
+                window.location.replace("index.html");
+                return;
+            }
 
-            window.location.replace("index.html");
-
-            return;
-
-}
-
-        saveUser(user);
-
-        currentUser = user;
-
-        console.log("Utilisateur enregistré :", currentUser);
-
-}
-
-        catch (error) {
-
+            saveUser(user);
+            currentUser = user;
+        } catch (error) {
             console.error("Impossible de récupérer le profil :", error);
-
             clearSession();
-
             window.location.replace("index.html");
-
             return;
-
         }
-
     }
 
     if (window.lucide) {
-
         window.lucide.createIcons();
-
     }
 
     initializeUserInterface();
-
     await loadConversations();
-
     initializeEvents();
 
-    // Nettoyage du polling si l'utilisateur quitte la page
+    // Arrêt de l'actualisation périodique si l'utilisateur quitte la page
     window.addEventListener("beforeunload", stopPolling);
-
 });
 
-
-// ======================================================
-// Affichage de l'utilisateur connecté (En-tête gauche)
-// ======================================================
-
+// Affiche les informations de l'utilisateur connecté dans le volet latéral
 function initializeUserInterface() {
-
     const userFullname = document.getElementById("user-fullname");
     const userAvatar = document.getElementById("user-avatar");
 
@@ -151,34 +97,25 @@ function initializeUserInterface() {
 
         userAvatar.src = avatarUrl;
     }
-
 }
 
-
-// ======================================================
-// Chargement des conversations (Barre latérale)
-// ======================================================
-
+// Récupère les conversations et les affiche
 async function loadConversations() {
-
     const loader = document.getElementById("conversations-loader");
     const emptyState = document.getElementById("conversations-empty");
     const container = document.getElementById("conversations-list");
 
-    // Afficher le loader et cacher les autres états
     if (loader) loader.classList.remove("hidden");
     if (emptyState) emptyState.classList.add("hidden");
     if (container) container.classList.add("hidden");
 
     try {
-
         allConversations = await getConversations();
 
         if (loader) loader.classList.add("hidden");
 
         if (!allConversations || allConversations.length === 0) {
             if (emptyState) emptyState.classList.remove("hidden");
-            // Montrer l'écran de bienvenue par défaut s'il n'y a pas de discussion
             toggleChatActiveState(false);
             return;
         }
@@ -186,7 +123,7 @@ async function loadConversations() {
         if (container) container.classList.remove("hidden");
         displayConversations(allConversations);
 
-        // Restaurer la dernière conversation ouverte (Bonus de confort utilisateur)
+        // Rouvre la dernière conversation consultée si elle est mémorisée
         const lastConvId = getRememberedConversation();
         if (lastConvId && allConversations.length > 0) {
             const lastConv = allConversations.find(c => String(c.id) === String(lastConvId));
@@ -194,44 +131,30 @@ async function loadConversations() {
                 openConversation(lastConv);
                 return;
             }
-            // La conversation mémorisée n'existe plus (supprimée)
             forgetConversation();
         }
 
-        // Si aucune session précédente n'est enregistrée, afficher l'écran d'accueil
         toggleChatActiveState(false);
 
     } catch (error) {
-
-        console.error("Erreur lors du chargement des conversations :", error);
+        console.error("Erreur chargement des conversations :", error);
         if (loader) loader.classList.add("hidden");
         if (emptyState) emptyState.classList.remove("hidden");
 
-        // On informe clairement l'utilisateur (erreur réseau ou serveur)
         showToast(
             error.message || "Impossible de charger vos conversations.",
             "error"
         );
-
     }
-
 }
 
-
-// ======================================================
-// Rendu dynamique de la liste des conversations
-// ======================================================
-
+// Génère les éléments de la liste des conversations
 function displayConversations(conversations) {
-
     const container = document.getElementById("conversations-list");
-
     if (!container) return;
 
     container.innerHTML = "";
 
-    // État "aucun résultat" : la recherche ne retourne rien
-    // (différent de "aucune conversation" qui concerne la liste complète)
     if (conversations.length === 0) {
         container.innerHTML = `
             <div class="flex-1 flex flex-col items-center justify-center p-6 text-slate-400 text-center">
@@ -244,12 +167,9 @@ function displayConversations(conversations) {
     }
 
     conversations.forEach(conversation => {
-
         const item = document.createElement("div");
-
         const isActive = currentConversation && String(currentConversation.id) === String(conversation.id);
 
-        // Classes adaptées aux styles Tailwind de votre maquette HTML
         item.className = `
             flex items-center gap-3 p-4 cursor-pointer transition border-b border-slate-50 dark:border-slate-800/40
             ${isActive
@@ -299,80 +219,49 @@ function displayConversations(conversations) {
         });
 
         container.appendChild(item);
-
     });
 
     if (window.lucide) window.lucide.createIcons();
-
 }
 
-
-// ======================================================
-// Ouverture d'une conversation
-// ======================================================
-
+// Ouvre une conversation sélectionnée
 async function openConversation(conversation) {
-
     currentConversation = conversation;
-
-    // Sauvegarde de l'état
     rememberConversation(conversation.id);
 
-    // Activer l'affichage de la boîte de discussion (et cacher l'accueil)
     toggleChatActiveState(true);
 
-    // Mettre à jour l'en-tête actif
     const activeContactName = document.getElementById("active-contact-name");
     const activeContactAvatar = document.getElementById("active-contact-avatar");
 
     const name = getConversationName(conversation, currentUser.id);
     const avatarUrl = getConversationAvatar(conversation, currentUser.id);
 
-    if (activeContactName) {
-        activeContactName.textContent = name;
-    }
+    if (activeContactName) activeContactName.textContent = name;
+    if (activeContactAvatar) activeContactAvatar.src = avatarUrl;
 
-    if (activeContactAvatar) {
-        activeContactAvatar.src = avatarUrl;
-    }
-
-    // Rafraîchir l'effet de sélection (sélection active sur la gauche)
     displayConversations(allConversations);
-
     await loadMessages(conversation.id);
 
-    // Démarrer le rafraîchissement automatique des messages de cette conversation
+    // Active la relève régulière des messages
     startPolling(conversation.id);
-
 }
 
-
-// ======================================================
-// Chargement des messages d'une discussion
-// ======================================================
-
+// Charge les messages d'une discussion
 async function loadMessages(conversationId, silent = false) {
-
     const container = document.getElementById("messages-container");
 
     try {
-
         const messages = await getMessages(conversationId);
         displayMessages(messages);
-
     } catch (error) {
+        console.error("Erreur chargement des messages :", error);
 
-        console.error("Erreur lors du chargement des messages :", error);
-
-        // En mode silencieux (polling en arrière-plan), on n'interrompt pas l'utilisateur
         if (silent) return;
 
-        // Cas particulier : la conversation n'existe pas (ou plus)
-        // -> On l'indique clairement dans la zone de messages
+        // La conversation a été supprimée ou n'existe plus
         if (error.status === 404) {
-
             stopPolling();
-
             if (container) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-slate-400 text-center">
@@ -382,38 +271,26 @@ async function loadMessages(conversationId, silent = false) {
                 `;
                 if (window.lucide) window.lucide.createIcons();
             }
-
             showToast("Conversation introuvable.", "error");
             return;
-
         }
 
-        // Autres erreurs (réseau, serveur...)
         showToast(
             error.message || "Impossible de charger les messages.",
             "error"
         );
-
     }
-
 }
 
-
-// ======================================================
-// Rafraîchissement automatique des messages (Bonus : temps réel)
-// ======================================================
-
+// Relève automatique des nouveaux messages toutes les 5 secondes
 function startPolling(conversationId) {
-
     stopPolling();
 
     pollingInterval = setInterval(() => {
-        // On ne rafraîchit que si la conversation est toujours celle affichée
         if (currentConversation && String(currentConversation.id) === String(conversationId)) {
             loadMessages(conversationId, true);
         }
     }, CONFIG.REFRESH_INTERVAL || 5000);
-
 }
 
 function stopPolling() {
@@ -423,18 +300,12 @@ function stopPolling() {
     }
 }
 
-
-// ======================================================
-// Rendu dynamique des bulles de messages
-// ======================================================
-
+// Affiche les bulles de messages
 function displayMessages(messages) {
-
     const container = document.getElementById("messages-container");
-
     if (!container) return;
 
-    // Ne pas casser le scroll de l'utilisateur s'il est en train de lire plus haut
+    // Détecte si la vue était déjà tout en bas
     const wasScrolledToBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight < 80;
 
@@ -451,7 +322,6 @@ function displayMessages(messages) {
         return;
     }
 
-    // Optionnel : Regroupement visuel par date (Aujourd'hui)
     container.innerHTML = `
         <div class="flex justify-center my-2">
             <span class="bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full text-[10px] font-medium tracking-wide">
@@ -461,7 +331,6 @@ function displayMessages(messages) {
     `;
 
     messages.forEach(message => {
-
         const senderId =
             message.senderId ||
             message.sender_id ||
@@ -469,12 +338,10 @@ function displayMessages(messages) {
             (message.user && message.user.id);
 
         const isMine = String(senderId) === String(currentUser.id);
-
         const bubbleWrapper = document.createElement("div");
 
         if (isMine) {
-            // Message envoyé par l'utilisateur connecté (aligné à droite, bulle bleue)
-            // Un bouton de suppression apparaît au survol (fonctionnalité bonus)
+            // Message envoyé (bulle bleue à droite)
             bubbleWrapper.className = "group flex items-end justify-end space-x-2 max-w-[75%] ml-auto";
             bubbleWrapper.innerHTML = `
                 <button
@@ -501,7 +368,6 @@ function displayMessages(messages) {
                 </div>
             `;
 
-            // Écouteur sur le bouton de suppression qu'on vient de créer
             const deleteBtn = bubbleWrapper.querySelector(".btn-delete-message");
             if (deleteBtn) {
                 deleteBtn.addEventListener("click", () => {
@@ -509,7 +375,6 @@ function displayMessages(messages) {
                 });
             }
 
-            // Écouteur sur le bouton de modification (Bonus)
             const editBtn = bubbleWrapper.querySelector(".btn-edit-message");
             if (editBtn) {
                 editBtn.addEventListener("click", () => {
@@ -518,7 +383,7 @@ function displayMessages(messages) {
             }
 
         } else {
-            // Message reçu (aligné à gauche, bulle blanche)
+            // Message reçu (bulle claire à gauche)
             bubbleWrapper.className = "flex items-end space-x-2 max-w-[75%]";
             bubbleWrapper.innerHTML = `
                 <div class="flex flex-col space-y-1">
@@ -533,36 +398,26 @@ function displayMessages(messages) {
         }
 
         container.appendChild(bubbleWrapper);
-
     });
 
-    // Rafraîchir les icônes Lucide (nécessaire pour l'icône "supprimer")
     if (window.lucide) {
         window.lucide.createIcons();
     }
 
-    // Défilement fluide vers le bas de la discussion,
-    // uniquement si l'utilisateur était déjà proche du bas
     if (wasScrolledToBottom) {
         container.scrollTo({
             top: container.scrollHeight,
             behavior: "smooth"
         });
     }
-
 }
 
 function getMessageContent(message) {
     return message.content || message.text || message.message || "";
 }
 
-
-// ======================================================
-// Envoi de message (Formulaire)
-// ======================================================
-
+// Envoi d'un nouveau message
 async function handleSendMessage(event) {
-
     if (event) event.preventDefault();
 
     const input = document.getElementById("message-input");
@@ -571,29 +426,23 @@ async function handleSendMessage(event) {
     if (!input) return;
 
     const content = input.value.trim();
-
     if (!content || !currentConversation) return;
 
     try {
-
-        // CORRECT : On passe deux arguments distincts (id, puis contenu)
         await sendMessage(currentConversation.id, content);
 
-        // Vider l'input et réinitialiser le compteur
         input.value = "";
         if (charCounter) charCounter.textContent = "0 / 500";
 
-        // Charger immédiatement les nouveaux messages
         await loadMessages(currentConversation.id);
 
-        // Mettre à jour l'aperçu dans la liste de gauche sans refaire d'appel API global
+        // Met à jour l'aperçu local de la liste sans tout recharger
         const index = allConversations.findIndex(c => String(c.id) === String(currentConversation.id));
         if (index !== -1) {
             allConversations[index].lastMessageAt = new Date().toISOString();
             allConversations[index].last_message = content;
             allConversations[index].lastMessage = content;
 
-            // Re-trier les conversations pour faire remonter celle-ci en haut
             allConversations.sort((a, b) => {
                 const dateA = new Date(a.lastMessageAt || a.updatedAt || a.createdAt || 0);
                 const dateB = new Date(b.lastMessageAt || b.updatedAt || b.createdAt || 0);
@@ -604,34 +453,20 @@ async function handleSendMessage(event) {
         }
 
     } catch (error) {
-
-        console.error("Erreur lors de l'envoi du message :", error);
-
-        // On remet le texte dans le champ pour ne pas faire perdre
-        // sa saisie à l'utilisateur, et on affiche l'erreur clairement.
+        console.error("Erreur envoi du message :", error);
         input.value = content;
-
         showToast(
             error.message || "Le message n'a pas pu être envoyé.",
             "error"
         );
-
     }
-
 }
 
-
-// ======================================================
-// Modification d'un message (Bonus)
-// ======================================================
-
+// Modification d'un message existant
 async function handleEditMessage(messageId, currentContent) {
-
     if (!messageId) return;
 
     const newContent = prompt("Modifier votre message :", currentContent);
-
-    // L'utilisateur a annulé
     if (newContent === null) return;
 
     if (!newContent.trim()) {
@@ -642,7 +477,6 @@ async function handleEditMessage(messageId, currentContent) {
     if (newContent.trim() === (currentContent || "").trim()) return;
 
     try {
-
         await editMessage(messageId, newContent);
 
         if (currentConversation) {
@@ -650,68 +484,47 @@ async function handleEditMessage(messageId, currentContent) {
         }
 
         showToast("Message modifié.", "success");
-
     } catch (error) {
-
-        console.error("Erreur lors de la modification du message :", error);
+        console.error("Erreur modification message :", error);
         showToast(
             error.message || "Impossible de modifier ce message.",
             "error"
         );
-
     }
-
 }
 
-
-// ======================================================
-// Suppression d'un message (Bonus)
-// ======================================================
-
+// Suppression d'un message
 async function handleDeleteMessage(messageId) {
-
     if (!messageId) return;
 
     const confirmed = confirm("Voulez-vous vraiment supprimer ce message ?");
     if (!confirmed) return;
 
     try {
-
         await deleteMessage(messageId);
 
-        // On recharge simplement les messages de la conversation active
         if (currentConversation) {
             await loadMessages(currentConversation.id);
         }
 
         showToast("Message supprimé.", "success");
-
     } catch (error) {
-
-        console.error("Erreur lors de la suppression du message :", error);
+        console.error("Erreur suppression message :", error);
         showToast(
             error.message || "Impossible de supprimer ce message.",
             "error"
         );
-
     }
-
 }
 
-
-// ======================================================
-// Gestion des Événements
-// ======================================================
-
+// Branchement des écouteurs d'événements
 function initializeEvents() {
-
-    // Formulaire d'envoi de message
     const chatForm = document.getElementById("chat-form");
     if (chatForm) {
         chatForm.addEventListener("submit", handleSendMessage);
     }
 
-    // Compteur de caractères dynamique (limite définie dans CONFIG)
+    // Compteur de caractères dans la zone de texte
     const input = document.getElementById("message-input");
     const charCounter = document.getElementById("char-counter");
     const maxLength = CONFIG.MAX_MESSAGE_LENGTH || 500;
@@ -728,7 +541,7 @@ function initializeEvents() {
         });
     }
 
-    // Recherche de conversations en direct dans la barre latérale
+    // Recherche de conversation en direct dans la barre latérale
     const searchInput = document.getElementById("search-conversations");
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
@@ -737,7 +550,7 @@ function initializeEvents() {
         });
     }
 
-    // Bascule du thème sombre / clair (Bonus)
+    // Bascule du mode clair / sombre
     const themeToggleBtn = document.getElementById("btn-theme-toggle");
     const themeToggleIcon = document.getElementById("theme-toggle-icon");
 
@@ -748,7 +561,6 @@ function initializeEvents() {
         }
     };
 
-    // Synchronise l'icône avec le thème déjà appliqué au chargement de la page
     updateThemeIcon(document.documentElement.classList.contains("dark"));
 
     if (themeToggleBtn) {
@@ -759,7 +571,7 @@ function initializeEvents() {
         });
     }
 
-    // Déconnexion (Bouton aside)
+    // Déconnexion
     const logoutBtn = document.getElementById("btn-logout");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
@@ -772,7 +584,7 @@ function initializeEvents() {
         });
     }
 
-    // Événements liés à la modal "Nouvelle conversation"
+    // Modale de sélection d'un contact pour nouvelle discussion
     const newChatBtn = document.querySelector('[title="Nouvelle conversation"]');
     const modal = document.getElementById("new-chat-modal");
     const closeModalBtn = document.getElementById("close-new-chat-modal");
@@ -781,8 +593,8 @@ function initializeEvents() {
     if (newChatBtn && modal) {
         newChatBtn.addEventListener("click", () => {
             modal.classList.remove("hidden");
-            if (searchContactsInput) searchContactsInput.value = ""; // Vider la recherche à l'ouverture
-            loadContactsToModal(); // Charger les utilisateurs
+            if (searchContactsInput) searchContactsInput.value = "";
+            loadContactsToModal();
         });
     }
 
@@ -792,46 +604,35 @@ function initializeEvents() {
         });
     }
 
-    // Fermer la modal en cliquant à l'extérieur de celle-ci
     window.addEventListener("click", (e) => {
         if (e.target === modal) {
             modal.classList.add("hidden");
         }
     });
 
-    // Recherche dynamique en direct parmi les contacts chargés dans la modal
     if (searchContactsInput) {
         searchContactsInput.addEventListener("input", (e) => {
             const query = e.target.value.toLowerCase().trim();
             filterAndDisplayContacts(query);
         });
     }
-
 }
 
-
-// ======================================================
-// Chargement et affichage des contacts dans la modal
-// ======================================================
-
+// Charge les contacts dans la modale
 async function loadContactsToModal() {
     const container = document.getElementById("contacts-list");
     const loader = document.getElementById("contacts-loader");
 
     if (!container) return;
-
     if (loader) loader.classList.remove("hidden");
 
     try {
-        const users = await getUsers(); // Appel API pour récupérer les utilisateurs
-
+        const users = await getUsers();
         if (loader) loader.classList.add("hidden");
 
-        // Filtrer pour exclure notre propre profil de la liste
+        // Exclut son propre compte de la liste de contacts
         allUsers = users.filter(user => String(user.id) !== String(currentUser.id));
-
         renderContacts(allUsers);
-
     } catch (error) {
         console.error("Erreur de chargement des contacts :", error);
         if (loader) loader.classList.add("hidden");
@@ -843,8 +644,7 @@ async function loadContactsToModal() {
     }
 }
 
-
-// Rendu dynamique de la liste brute de contacts dans la modal
+// Affiche la liste des contacts dans la modale
 function renderContacts(usersList) {
     const container = document.getElementById("contacts-list");
     if (!container) return;
@@ -894,8 +694,7 @@ function renderContacts(usersList) {
     }
 }
 
-
-// Filtre local des contacts dans la modal
+// Filtrage en direct des contacts dans la modale
 function filterAndDisplayContacts(query) {
     if (!query) {
         renderContacts(allUsers);
@@ -910,21 +709,39 @@ function filterAndDisplayContacts(query) {
     renderContacts(filtered);
 }
 
-
-// Action de création de la discussion après le clic sur un contact
+// Démarre ou sélectionne une discussion avec un contact
 async function handleStartNewConversation(recipientId) {
     try {
-        // Appelle l'API pour créer ou récupérer la conversation existante
-        const conversation = await createConversation(recipientId, currentUser.id);
+        if (!currentUser || !currentUser.id) {
+            currentUser = getUser();
+            if (!currentUser || !currentUser.id) {
+                const meRes = await getCurrentUser();
+                const freshUser = meRes?.data?.user || meRes?.data || meRes?.user;
+                if (freshUser) {
+                    saveUser(freshUser);
+                    currentUser = freshUser;
+                }
+            }
+        }
 
-        // Recharger la liste latérale pour inclure la nouvelle conversation
+        if (!currentUser?.id) {
+            throw new Error("Impossible d'identifier votre compte utilisateur.");
+        }
+
+        if (!recipientId) {
+            throw new Error("Destinataire invalide.");
+        }
+
+        const conversation = await createConversation(recipientId, currentUser.id);
         await loadConversations();
 
-        // Ouvrir immédiatement la nouvelle conversation créée
-        openConversation(conversation);
+        if (conversation && (conversation.id || conversation.conversation?.id)) {
+            const targetConv = conversation.id ? conversation : conversation.conversation;
+            openConversation(targetConv);
+        }
 
     } catch (error) {
-        console.error("Erreur lors de la création de la discussion :", error);
+        console.error("Erreur création discussion :", error);
         showToast(
             error.message || "Impossible de démarrer cette discussion.",
             "error"
@@ -932,13 +749,8 @@ async function handleStartNewConversation(recipientId) {
     }
 }
 
-
-// ======================================================
-// Basculer l'affichage (Écran d'accueil vs Conversation active)
-// ======================================================
-
+// Bascule entre l'écran d'accueil et la zone de discussion active
 function toggleChatActiveState(isActive) {
-
     const welcomeScreen = document.getElementById("chat-welcome-screen");
     const activeBox = document.getElementById("chat-active-box");
 
@@ -950,38 +762,27 @@ function toggleChatActiveState(isActive) {
         if (activeBox) activeBox.classList.add("hidden");
         stopPolling();
     }
-
 }
 
-
-// ======================================================
-// Utilitaires de protection et d'affichage
-// ======================================================
-
+// Formatage de l'heure
 function formatDate(dateString) {
-
     if (!dateString) return "";
-
     return new Date(dateString).toLocaleTimeString("fr-FR", {
         hour: "2-digit",
         minute: "2-digit"
     });
-
 }
 
-// Éviter l'injection XSS (sécurisation des chaînes de caractères affichées)
+// Échappement des caractères spéciaux pour se protéger des injections XSS
 function escapeHTML(str) {
-
     return String(str ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-
 }
 
-// Idem, mais pour une utilisation à l'intérieur d'un attribut HTML (src, alt...)
 function escapeAttr(str) {
     return escapeHTML(str);
 }

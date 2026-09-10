@@ -1,38 +1,21 @@
- // Kadea Chat
-// Gestion de la deconnexion
- 
+// Gestion de la déconnexion
+
 import { clearSession } from "../utils/storage.js";
 
-
- // Deconnecte l'utilisateur
- 
+// Efface les identifiants locaux et renvoie à la page d'accueil
 export function logoutUser() {
-
-    // Suppression de toutes les donnees de session
     clearSession();
-
-    // Redirection vers la page de connexion
     window.location.replace("index.html");
-
 }
 
-// Initialise le bouton de deconnexion. Par defaut, le bouton doit avoir l'id "logoutBtn". 
+// Branche l'action de déconnexion sur un bouton donné (par défaut "logoutBtn")
 export function initLogout(buttonId = "logoutBtn") {
-
     const button = document.getElementById(buttonId);
-
     if (!button) return;
 
     button.addEventListener("click", () => {
-
-        const confirmed = confirm(
-            "Voulez-vous vraiment vous déconnecter ?"
-        );
-
+        const confirmed = confirm("Voulez-vous vraiment vous déconnecter ?");
         if (!confirmed) return;
-
         logoutUser();
-
     });
-
 }
