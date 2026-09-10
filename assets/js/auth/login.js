@@ -86,7 +86,7 @@ async function handleLogin(event) {
 
         }
 
-v        // Sauvegarde du token
+        // Sauvegarde du token
  
         saveToken(token);
 
