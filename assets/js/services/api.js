@@ -1,15 +1,9 @@
-// ======================================================
-// KADEA CHAT
 // Service de communication avec l'API
-// ======================================================
 
 import { CONFIG } from "../config/config.js";
 import { getToken, clearSession } from "../utils/storage.js";
 
-/**
- * Construit les en-têtes HTTP
- * @returns {Object}
- */
+
 function buildHeaders() {
 
     const headers = {
@@ -27,14 +21,7 @@ function buildHeaders() {
 
 }
 
-/**
- * Effectue une requête HTTP vers l'API
- *
- * @param {string} endpoint
- * @param {string} method
- * @param {Object|null} data
- * @returns {Promise<Object>}
- */
+
 export async function apiRequest(
     endpoint,
     method = "GET",
@@ -190,9 +177,7 @@ export async function apiRequest(
             );
             apiError.status = response.status;
             throw apiError;
-
         }
-
         return result;
 
     } catch (error) {
