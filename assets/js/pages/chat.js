@@ -428,10 +428,6 @@ function displayMessages(messages) {
     }
 }
 
-function getMessageContent(message) {
-    return message.content || message.text || message.message || "";
-}
-
 // Envoi d'un nouveau message
 async function handleSendMessage(event) {
     if (event) event.preventDefault();
