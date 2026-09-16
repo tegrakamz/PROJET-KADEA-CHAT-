@@ -6,6 +6,11 @@ import {
     apiDelete,
     apiPatch
 } from "./api.js";
+import {
+    getUser,
+    getToken,
+    parseJwt
+} from "../utils/storage.js";
 
 const MESSAGE_ENDPOINTS = {
     LIST: (conversationId) => `/conversations/${conversationId}/messages`,
@@ -95,15 +100,34 @@ export function formatMessageTime(date) {
 
 // Vérifie si le message a été envoyé par l'utilisateur connecté
 export function isMyMessage(message, userId) {
-    if (!message || !userId) return false;
+    if (!message) return false;
+
+    // Collecte de tous les identifiants possibles de l'utilisateur connecté
+    const possibleMyIds = new Set();
+    if (userId) possibleMyIds.add(String(userId).toLowerCase());
+
+    const storedUser = getUser();
+    if (storedUser?.id) possibleMyIds.add(String(storedUser.id).toLowerCase());
+    if (storedUser?.userId) possibleMyIds.add(String(storedUser.userId).toLowerCase());
+
+    const token = getToken();
+    if (token) {
+        const payload = parseJwt(token);
+        if (payload?.userId) possibleMyIds.add(String(payload.userId).toLowerCase());
+        if (payload?.id) possibleMyIds.add(String(payload.id).toLowerCase());
+    }
+
+    if (possibleMyIds.size === 0) return false;
 
     const senderId =
         message.senderId ||
         message.sender_id ||
-        (message.sender && message.sender.id) ||
-        (message.user && message.user.id);
+        (message.sender && (message.sender.id || message.sender.userId || message.sender._id)) ||
+        (message.user && (message.user.id || message.user.userId || message.user._id));
 
-    return String(senderId) === String(userId);
+    if (!senderId) return false;
+
+    return possibleMyIds.has(String(senderId).toLowerCase());
 }
 
 // Récupère le texte du message quel que soit le champ utilisé par l'API
@@ -118,11 +142,12 @@ export function getMessageContent(message) {
 
 // Récupère l'auteur du message
 export function getSender(message) {
-    return (
-        message.sender ||
-        message.user ||
-        { name: "Utilisateur" }
-    );
+    const sender = message.sender || message.user || {};
+    return {
+        id: sender.id || sender.userId || message.senderId || message.sender_id || null,
+        fullName: sender.fullName || sender.fullname || sender.name || "Contact",
+        avatarUrl: sender.avatarUrl || sender.avatar || null
+    };
 }
 
 // Filtrage de messages par mot-clé

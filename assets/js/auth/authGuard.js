@@ -8,7 +8,10 @@ import {
 // Pages accessibles sans être connecté
 const PUBLIC_PAGES = [
     "index.html",
-    "register.html"
+    "register.html",
+    "login",
+    "register",
+    ""
 ];
 
 // Nom du fichier HTML courant

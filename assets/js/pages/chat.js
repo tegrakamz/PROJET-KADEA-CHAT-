@@ -26,7 +26,10 @@ import {
     getMessages,
     sendMessage,
     editMessage,
-    deleteMessage
+    deleteMessage,
+    isMyMessage,
+    getSender,
+    getMessageContent
 } from "../services/messageService.js";
 import { CONFIG } from "../config/config.js";
 import { showToast } from "../components/toast.js";
@@ -44,23 +47,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     requireAuth();
 
     currentUser = getUser();
+    if (currentUser) {
+        initializeUserInterface();
+    }
 
-    // Si le profil en cache local est incomplet, on interroge l'API
-    if (!currentUser || !currentUser.id) {
-        try {
-            const response = await getCurrentUser();
-            const user = response?.data?.user || response?.user || response?.data || response;
+    // Récupère ou synchronise le profil auprès de l'API
+    try {
+        const response = await getCurrentUser();
+        const user = response?.data?.user || response?.user || response?.data || response;
 
-            if (!user || !user.id) {
-                clearSession();
-                window.location.replace("index.html");
-                return;
-            }
-
+        if (user && (user.id || user.userId || user.email)) {
             saveUser(user);
-            currentUser = user;
-        } catch (error) {
-            console.error("Impossible de récupérer le profil :", error);
+            currentUser = getUser();
+            initializeUserInterface();
+        }
+    } catch (error) {
+        console.warn("Synchronisation du profil :", error);
+        if (!currentUser) {
             clearSession();
             window.location.replace("index.html");
             return;
@@ -81,11 +84,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Affiche les informations de l'utilisateur connecté dans le volet latéral
 function initializeUserInterface() {
+    currentUser = getUser();
+    if (!currentUser) return;
+
     const userFullname = document.getElementById("user-fullname");
     const userAvatar = document.getElementById("user-avatar");
 
+    const name = currentUser.fullName || "Moi";
     if (userFullname) {
-        userFullname.textContent = currentUser.fullName || "Moi";
+        userFullname.textContent = name;
     }
 
     if (userAvatar) {
@@ -93,7 +100,7 @@ function initializeUserInterface() {
             currentUser.avatarUrl ||
             currentUser.avatar ||
             currentUser.photo ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.fullName || "Moi")}&background=2563eb&color=fff&bold=true`;
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff&bold=true&size=128`;
 
         userAvatar.src = avatarUrl;
     }
@@ -313,8 +320,8 @@ function displayMessages(messages) {
 
     if (!messages || messages.length === 0) {
         container.innerHTML = `
-            <div class="flex justify-center my-4">
-                <span class="bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-3 py-1 rounded-full text-[10px] font-medium italic">
+            <div class="flex justify-center my-6">
+                <span class="bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-3.5 py-1.5 rounded-full text-[11px] font-medium italic">
                     Aucun message. Commencez la discussion !
                 </span>
             </div>
@@ -331,51 +338,50 @@ function displayMessages(messages) {
     `;
 
     messages.forEach(message => {
-        const senderId =
-            message.senderId ||
-            message.sender_id ||
-            (message.sender && message.sender.id) ||
-            (message.user && message.user.id);
-
-        const isMine = String(senderId) === String(currentUser.id);
-        const bubbleWrapper = document.createElement("div");
+        const isMine = isMyMessage(message, currentUser?.id);
+        const row = document.createElement("div");
 
         if (isMine) {
-            // Message envoyé (bulle bleue à droite)
-            bubbleWrapper.className = "group flex items-end justify-end space-x-2 max-w-[75%] ml-auto";
-            bubbleWrapper.innerHTML = `
-                <button
-                    class="btn-delete-message opacity-0 group-hover:opacity-100 transition p-1.5 text-slate-300 hover:text-red-500 rounded-lg"
-                    title="Supprimer ce message"
-                    data-message-id="${message.id || message._id || ""}"
-                >
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
-                <button
-                    class="btn-edit-message opacity-0 group-hover:opacity-100 transition p-1.5 text-slate-300 hover:text-[#2563eb] rounded-lg"
-                    title="Modifier ce message"
-                    data-message-id="${message.id || message._id || ""}"
-                >
-                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                </button>
-                <div class="flex flex-col space-y-1 items-end">
-                    <div class="bg-[#2563eb] text-white text-xs px-4 py-2.5 rounded-2xl rounded-br-none shadow-sm">
-                        <p class="break-all whitespace-pre-line">${escapeHTML(getMessageContent(message))}</p>
+            // Message envoyé (aligné strictement à DROITE avec fond BLEU)
+            row.className = "w-full flex justify-end";
+            row.innerHTML = `
+                <div class="group flex items-end justify-end space-x-1.5 max-w-[85%] sm:max-w-[70%]">
+                    <div class="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            class="btn-delete-message p-1.5 text-slate-300 hover:text-red-500 rounded-lg transition"
+                            title="Supprimer ce message"
+                            data-message-id="${message.id || message._id || ""}"
+                        >
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button
+                            class="btn-edit-message p-1.5 text-slate-300 hover:text-[#2563eb] rounded-lg transition"
+                            title="Modifier ce message"
+                            data-message-id="${message.id || message._id || ""}"
+                        >
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
-                    <span class="text-[9px] text-slate-400 mr-1">
-                        ${formatDate(message.createdAt || message.created_at)}${message.editedAt || message.updatedAt ? " · modifié" : ""}
-                    </span>
+                    <div class="flex flex-col space-y-1 items-end">
+                        <div class="bg-[#2563eb] text-white text-xs px-4 py-2.5 rounded-2xl rounded-br-xs shadow-sm">
+                            <p class="break-words whitespace-pre-line text-left leading-relaxed">${escapeHTML(getMessageContent(message))}</p>
+                        </div>
+                        <div class="flex items-center gap-1 text-[10px] text-slate-400 mr-1">
+                            <span>${formatDate(message.createdAt || message.created_at)}${message.editedAt || message.updatedAt ? " · modifié" : ""}</span>
+                            <i data-lucide="check-check" class="w-3.5 h-3.5 text-blue-500"></i>
+                        </div>
+                    </div>
                 </div>
             `;
 
-            const deleteBtn = bubbleWrapper.querySelector(".btn-delete-message");
+            const deleteBtn = row.querySelector(".btn-delete-message");
             if (deleteBtn) {
                 deleteBtn.addEventListener("click", () => {
                     handleDeleteMessage(deleteBtn.dataset.messageId);
                 });
             }
 
-            const editBtn = bubbleWrapper.querySelector(".btn-edit-message");
+            const editBtn = row.querySelector(".btn-edit-message");
             if (editBtn) {
                 editBtn.addEventListener("click", () => {
                     handleEditMessage(editBtn.dataset.messageId, getMessageContent(message));
@@ -383,21 +389,31 @@ function displayMessages(messages) {
             }
 
         } else {
-            // Message reçu (bulle claire à gauche)
-            bubbleWrapper.className = "flex items-end space-x-2 max-w-[75%]";
-            bubbleWrapper.innerHTML = `
-                <div class="flex flex-col space-y-1">
-                    <div class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs px-4 py-2.5 rounded-2xl rounded-bl-none border border-slate-200/60 dark:border-slate-700 shadow-sm">
-                        <p class="break-all whitespace-pre-line">${escapeHTML(getMessageContent(message))}</p>
+            // Message reçu (aligné strictement à GAUCHE avec fond BLANC/GRIS CLAIR)
+            row.className = "w-full flex justify-start";
+            const sender = getSender(message);
+            const senderName = sender.fullName || (currentConversation ? getConversationName(currentConversation, currentUser?.id) : "Contact");
+            const senderAvatar = sender.avatarUrl || (currentConversation ? getConversationAvatar(currentConversation, currentUser?.id) : `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=e2e8f0&color=475569&bold=true&size=64`);
+
+            row.innerHTML = `
+                <div class="flex items-end space-x-2.5 max-w-[85%] sm:max-w-[70%]">
+                    <img src="${senderAvatar}" alt="${escapeHTML(senderName)}" class="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs mb-4" onerror="this.src='https://ui-avatars.com/api/?name=Contact&background=e2e8f0&color=475569&bold=true'">
+                    <div class="flex flex-col space-y-1 items-start">
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 ml-1">
+                            ${escapeHTML(senderName)}
+                        </span>
+                        <div class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-slate-100 text-xs px-4 py-2.5 rounded-2xl rounded-bl-xs border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                            <p class="break-words whitespace-pre-line text-left leading-relaxed">${escapeHTML(getMessageContent(message))}</p>
+                        </div>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                            ${formatDate(message.createdAt || message.created_at)}
+                        </span>
                     </div>
-                    <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-1">
-                        ${formatDate(message.createdAt || message.created_at)}
-                    </span>
                 </div>
             `;
         }
 
-        container.appendChild(bubbleWrapper);
+        container.appendChild(row);
     });
 
     if (window.lucide) {

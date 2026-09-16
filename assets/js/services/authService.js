@@ -1,12 +1,13 @@
 // Requêtes d'authentification auprès de l'API
 
-import { apiGet, apiPost } from "./api.js";
+import { apiGet, apiPost, apiPatch } from "./api.js";
 
 const AUTH_ENDPOINTS = {
     REGISTER: "/auth/register",
     LOGIN: "/auth/login",
     ME: "/auth/me",
-    CHANGE_PASSWORD: "/auth/change-password"
+    CHANGE_PASSWORD: "/auth/change-password",
+    UPDATE_PROFILE: "/users/me"
 };
 
 // Inscription d'un nouveau compte
@@ -27,4 +28,9 @@ export function getCurrentUser() {
 // Mise à jour du mot de passe
 export function changePassword(passwordData) {
     return apiPost(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData);
+}
+
+// Mise à jour des informations de profil (fullName, bio, avatarUrl)
+export function updateProfile(profileData) {
+    return apiPatch(AUTH_ENDPOINTS.UPDATE_PROFILE, profileData);
 }

@@ -2,7 +2,7 @@
 
 import { logoutUser } from "../auth/logout.js";
 import { getUser, saveUser } from "../utils/storage.js";
-import { changePassword, getCurrentUser } from "../services/authService.js";
+import { changePassword, getCurrentUser, updateProfile } from "../services/authService.js";
 import { isStrongPassword } from "../utils/validator.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -11,14 +11,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         lucide.createIcons();
     }
 
-    // Affichage des données du profil
+    // Affichage immédiat des données du profil sauvegardées localement
     renderUserData();
 
-    // Actualisation silencieuse des infos depuis le serveur
+    // Actualisation silencieuse des infos depuis le serveur (/auth/me)
     try {
         const freshUserRes = await getCurrentUser();
-        if (freshUserRes && freshUserRes.success && freshUserRes.data) {
-            saveUser(freshUserRes.data?.user || freshUserRes.data);
+        const userData = freshUserRes?.data?.user || freshUserRes?.data || freshUserRes?.user || freshUserRes;
+        if (userData && (userData.id || userData.userId || userData.email || userData.fullName)) {
+            saveUser(userData);
             renderUserData();
         }
     } catch (e) {
@@ -85,6 +86,83 @@ document.addEventListener("DOMContentLoaded", async () => {
             const isDark = document.documentElement.classList.toggle("dark");
             localStorage.setItem("theme", isDark ? "dark" : "light");
             updateThemeIcon(isDark);
+        });
+    }
+
+    // Fenêtre modale d'édition de profil
+    const editModal = document.getElementById("modal-edit-profile");
+    const editTrigger = document.getElementById("btn-edit-profile");
+    const closeEditModalBtn = document.getElementById("btn-close-edit-modal");
+    const editForm = document.getElementById("form-edit-profile");
+
+    if (editTrigger && editModal) {
+        editTrigger.addEventListener("click", () => {
+            const currentUser = getUser() || {};
+            const fullnameInput = document.getElementById("edit-fullname");
+            const avatarInput = document.getElementById("edit-avatar-url");
+            const bioInput = document.getElementById("edit-bio");
+
+            if (fullnameInput) fullnameInput.value = currentUser.fullName || currentUser.name || "";
+            if (avatarInput) avatarInput.value = currentUser.avatarUrl || currentUser.avatar || "";
+            if (bioInput) bioInput.value = currentUser.bio || "";
+
+            hideEditModalMsg();
+            editModal.classList.remove("hidden");
+        });
+    }
+
+    if (closeEditModalBtn && editModal) {
+        closeEditModalBtn.addEventListener("click", () => {
+            editModal.classList.add("hidden");
+        });
+    }
+
+    if (editModal) {
+        editModal.addEventListener("click", (e) => {
+            if (e.target === editModal) {
+                editModal.classList.add("hidden");
+            }
+        });
+    }
+
+    if (editForm) {
+        editForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideEditModalMsg();
+
+            const fullname = document.getElementById("edit-fullname")?.value?.trim();
+            const avatarUrl = document.getElementById("edit-avatar-url")?.value?.trim();
+            const bio = document.getElementById("edit-bio")?.value?.trim();
+
+            if (!fullname) {
+                showEditModalMsg("Le nom complet est obligatoire.", "error");
+                return;
+            }
+
+            const submitBtn = editForm.querySelector("button[type='submit']");
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = "Enregistrement en cours...";
+
+            try {
+                const response = await updateProfile({ fullName: fullname, avatarUrl, bio });
+                const updated = response?.data?.user || response?.data || response?.user || { fullName: fullname, avatarUrl, bio };
+
+                // Sauvegarde et mise à jour immédiate de l'interface
+                saveUser(updated);
+                renderUserData();
+
+                showEditModalMsg("Profil mis à jour avec succès !", "success");
+                setTimeout(() => {
+                    editModal.classList.add("hidden");
+                }, 1200);
+            } catch (err) {
+                console.error("Erreur modification profil :", err);
+                showEditModalMsg(err.message || "Erreur lors de la mise à jour du profil.", "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         });
     }
 
@@ -181,36 +259,72 @@ function renderUserData() {
 
     const nameStr = user.fullName || user.name || "Utilisateur";
     const emailStr = user.email || "Non renseigné";
-    const usernameStr = user.username || user.id || "Non défini";
+    const usernameStr = user.id || user.userId || user.username || "Connecté";
 
-    nameElements.forEach(el => el.textContent = nameStr);
-    emailElements.forEach(el => el.textContent = emailStr);
+    nameElements.forEach(el => {
+        el.textContent = nameStr;
+    });
+
+    emailElements.forEach(el => {
+        el.textContent = emailStr;
+    });
     
     if (usernameDetail) {
         usernameDetail.textContent = usernameStr;
     }
 
+    const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameStr)}&background=2563eb&color=white&bold=true&size=128`;
     if (avatarImg) {
-        const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameStr)}&background=2563eb&color=white&bold=true`;
         avatarImg.src = user.avatarUrl || user.avatar || user.photo || fallbackAvatar;
+        avatarImg.onerror = () => {
+            avatarImg.src = fallbackAvatar;
+        };
     }
 
-    if (memberBadge && user.createdAt) {
-        try {
-            const dateStr = new Date(user.createdAt).toLocaleDateString("fr-FR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            });
-            memberBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Membre depuis le ${dateStr}`;
-            if (typeof lucide !== "undefined") {
-                lucide.createIcons();
+    if (memberBadge) {
+        if (user.createdAt) {
+            try {
+                const dateStr = new Date(user.createdAt).toLocaleDateString("fr-FR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                });
+                memberBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Membre depuis le ${dateStr}`;
+            } catch (_) {
+                memberBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Compte vérifié`;
             }
-        } catch (_) {}
+        } else {
+            memberBadge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Compte vérifié`;
+        }
+
+        if (typeof lucide !== "undefined") {
+            lucide.createIcons();
+        }
     }
 }
 
-// Notifications dans la modale
+// Notifications dans la modale d'édition de profil
+function showEditModalMsg(text, type = "error") {
+    const modalMessage = document.getElementById("modal-edit-message");
+    if (!modalMessage) return;
+
+    modalMessage.classList.remove("hidden");
+    if (type === "success") {
+        modalMessage.className = "rounded-xl p-3 text-xs font-medium border bg-green-50 border-green-200 text-green-700 mb-4";
+    } else {
+        modalMessage.className = "rounded-xl p-3 text-xs font-medium border bg-red-50 border-red-200 text-red-700 mb-4";
+    }
+    modalMessage.textContent = text;
+}
+
+function hideEditModalMsg() {
+    const modalMessage = document.getElementById("modal-edit-message");
+    if (modalMessage) {
+        modalMessage.classList.add("hidden");
+    }
+}
+
+// Notifications dans la modale de changement de mot de passe
 function showModalMsg(text, type = "error") {
     const modalMessage = document.getElementById("modal-message");
     if (!modalMessage) return;

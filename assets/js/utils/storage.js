@@ -5,6 +5,68 @@ const USER_KEY = "kadea_user";
 const THEME_KEY = "theme";
 const LAST_CONVERSATION_KEY = "kadea_last_conversation";
 
+// --- Décodage JWT de secours ---
+export function parseJwt(token) {
+    if (!token) return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch {
+        return null;
+    }
+}
+
+// Normalise l'objet utilisateur pour garantir la présence des champs essentiels
+export function normalizeUser(user) {
+    if (!user) return null;
+    let u = user;
+    if (u.data?.user) u = u.data.user;
+    else if (u.user) u = u.user;
+    else if (u.data && typeof u.data === "object" && !Array.isArray(u.data)) u = u.data;
+
+    let jwtPayload = null;
+    const token = getToken();
+    if (token) {
+        jwtPayload = parseJwt(token);
+    }
+
+    const rawId = u.id || u.userId || u._id || u.sub || jwtPayload?.userId || jwtPayload?.id;
+    const cleanId = rawId ? String(rawId) : null;
+
+    const email = u.email || jwtPayload?.email || "";
+    const emailPrefix = email ? email.split('@')[0] : "";
+
+    const fullName =
+        u.fullName ||
+        u.fullname ||
+        u.name ||
+        u.nom ||
+        (emailPrefix ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1) : "");
+
+    const avatarUrl = u.avatarUrl || u.avatar_url || u.avatar || u.photo || null;
+
+    return {
+        ...u,
+        id: cleanId,
+        userId: cleanId,
+        fullName: fullName || "Utilisateur",
+        email: email,
+        avatarUrl: avatarUrl,
+        bio: u.bio || "",
+        createdAt: u.createdAt || u.created_at || null,
+        updatedAt: u.updatedAt || u.updated_at || null
+    };
+}
+
 // --- Token JWT ---
 
 export function saveToken(token) {
@@ -40,12 +102,10 @@ export function saveUser(user) {
             localStorage.removeItem(USER_KEY);
             return;
         }
-        // Extraction du profil si l'API le renvoie encapsulé
-        let normalized = user;
-        if (normalized.data?.user) normalized = normalized.data.user;
-        else if (normalized.user) normalized = normalized.user;
-        else if (normalized.data) normalized = normalized.data;
-        localStorage.setItem(USER_KEY, JSON.stringify(normalized));
+        const normalized = normalizeUser(user);
+        if (normalized) {
+            localStorage.setItem(USER_KEY, JSON.stringify(normalized));
+        }
     } catch (error) {
         console.warn("Impossible d'enregistrer l'utilisateur :", error);
     }
@@ -54,12 +114,30 @@ export function saveUser(user) {
 export function getUser() {
     try {
         const raw = localStorage.getItem(USER_KEY);
-        if (!raw) return null;
-        let parsed = JSON.parse(raw);
-        if (parsed?.data?.user) parsed = parsed.data.user;
-        else if (parsed?.user) parsed = parsed.user;
-        else if (parsed?.data) parsed = parsed.data;
-        return parsed;
+        let parsed = null;
+        if (raw) {
+            try {
+                parsed = JSON.parse(raw);
+            } catch {
+                parsed = null;
+            }
+        }
+
+        // Si l'objet en cache est manquant ou incomplet, on tente de le reconstituer avec le JWT
+        if (!parsed || (!parsed.id && !parsed.userId)) {
+            const token = getToken();
+            const jwtPayload = parseJwt(token);
+            if (jwtPayload) {
+                const fallbackUser = normalizeUser(jwtPayload);
+                if (fallbackUser) {
+                    saveUser(fallbackUser);
+                    return fallbackUser;
+                }
+            }
+            if (!parsed) return null;
+        }
+
+        return normalizeUser(parsed);
     } catch (error) {
         console.warn("Impossible de lire l'utilisateur :", error);
         return null;

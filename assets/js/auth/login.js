@@ -57,22 +57,32 @@ async function handleLogin(event) {
         // On sauvegarde le token pour les requêtes suivantes
         saveToken(token);
 
-        // On récupère le profil complet de l'utilisateur
-        const me = await getCurrentUser();
+        // Si la réponse de login contenait déjà l'utilisateur
+        let userData = response.data?.user || response.user;
 
-        if (!me?.success || !me.data) {
-            showMessage("Connexion réussie mais impossible de récupérer votre profil.");
-            return;
+        // On tente d'obtenir le profil à jour
+        try {
+            const me = await getCurrentUser();
+            if (me?.data?.user || me?.data || me?.user) {
+                userData = me.data?.user || me.data || me.user;
+            }
+        } catch (meError) {
+            console.warn("Profil /auth/me non disponible immédiatement :", meError);
         }
 
-        const userData = me.data?.user || me.data;
-        saveUser(userData);
+        if (userData) {
+            saveUser(userData);
+        } else {
+            // Reconstruit au minimum via le token JWT
+            const decoded = getUser();
+            if (decoded) saveUser(decoded);
+        }
 
         showMessage(response.message || "Connexion réussie !", "success");
 
         setTimeout(() => {
             window.location.href = "chat.html";
-        }, 1000);
+        }, 600);
 
     } catch (error) {
         console.error("Erreur de connexion :", error);

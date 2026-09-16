@@ -166,58 +166,97 @@
             <section class="flex flex-col items-center gap-3 w-full max-w-sm mb-12">
                 <button id="btn-edit-profile" class="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-sm text-xs">
                     <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                    Edit Profile
+                    Modifier le profil
                 </button>
 
                 <button id="btn-change-password-trigger" class="w-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition text-xs">
                     <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                    Change Password
+                    Changer de mot de passe
                 </button>
 
                 <button id="btn-profile-logout" class="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 transition mt-2">
                     <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                    Logout
+                    Se déconnecter
                 </button>
             </section>
 
             <footer class="w-full border-t border-slate-200 dark:border-slate-800/60 pt-6 text-center text-[10px] text-slate-400 dark:text-slate-500">
-                Kadea Chat v1.0.0 — Encryption Active
+                Kadea Chat — Messagerie instantanée sécurisée
             </footer>
 
         </main>
     </div>
 
+    <!-- Modale Modifier le profil -->
+    <div id="modal-edit-profile" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative">
+            <button id="btn-close-edit-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Modifier mon profil</h3>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mb-4">Mettez à jour vos informations personnelles.</p>
+            
+            <form id="form-edit-profile" class="space-y-4">
+                <div id="modal-edit-message" class="hidden rounded-xl p-3 text-[11px] font-medium border"></div>
+                
+                <div>
+                    <label for="edit-fullname" class="block text-slate-500 dark:text-slate-400 text-[10px] font-semibold mb-1.5">Nom complet</label>
+                    <input type="text" id="edit-fullname" required placeholder="Votre nom et prénom"
+                        class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-800 dark:text-slate-100 outline-none transition-all focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10">
+                </div>
+                
+                <div>
+                    <label for="edit-avatar-url" class="block text-slate-500 dark:text-slate-400 text-[10px] font-semibold mb-1.5">URL de l'avatar (photo de profil)</label>
+                    <input type="url" id="edit-avatar-url" placeholder="https://exemple.com/photo.jpg"
+                        class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-800 dark:text-slate-100 outline-none transition-all focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10">
+                    <p class="text-[10px] text-slate-400 mt-1">Laissez vide pour utiliser un avatar dynamique avec vos initiales.</p>
+                </div>
+                
+                <div>
+                    <label for="edit-bio" class="block text-slate-500 dark:text-slate-400 text-[10px] font-semibold mb-1.5">Bio / Statut</label>
+                    <textarea id="edit-bio" rows="2" placeholder="Une courte description..."
+                        class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-800 dark:text-slate-100 outline-none transition-all focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 resize-none"></textarea>
+                </div>
+                
+                <button type="submit" class="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl text-xs transition-colors mt-2 flex justify-center items-center gap-2 shadow-sm">
+                    <span>Enregistrer le profil</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale Changement de mot de passe -->
     <div id="modal-change-password" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative">
             <button id="btn-close-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Change Password</h3>
-            <p class="text-[11px] text-slate-450 dark:text-slate-550 mb-4">Please fill in the details below to change your password.</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Changer de mot de passe</h3>
+            <p class="text-[11px] text-slate-450 dark:text-slate-550 mb-4">Veuillez renseigner votre ancien mot de passe et le nouveau.</p>
             
             <form id="form-change-password" class="space-y-4">
                 <div id="modal-message" class="hidden rounded-xl p-3 text-[11px] font-medium border"></div>
                 
                 <div>
-                    <label for="old-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">Current Password</label>
+                    <label for="old-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">Mot de passe actuel</label>
                     <input type="password" id="old-password" required placeholder="••••••••"
                         class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-850 dark:text-slate-150 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
                 </div>
                 
                 <div>
-                    <label for="new-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">New Password</label>
+                    <label for="new-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">Nouveau mot de passe</label>
                     <input type="password" id="new-password" required placeholder="••••••••"
                         class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-850 dark:text-slate-150 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
                 </div>
                 
                 <div>
-                    <label for="confirm-new-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">Confirm New Password</label>
+                    <label for="confirm-new-password" class="block text-slate-500 dark:text-slate-450 text-[10px] font-semibold mb-1.5">Confirmer le nouveau mot de passe</label>
                     <input type="password" id="confirm-new-password" required placeholder="••••••••"
                         class="w-full bg-[#f0f4ff]/60 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-xl py-3 px-4 text-xs text-slate-850 dark:text-slate-150 outline-none transition-all focus:border-[#2563eb] focus:bg-white focus:ring-4 focus:ring-blue-500/10">
                 </div>
                 
                 <button type="submit" class="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl text-xs transition-colors mt-2 flex justify-center items-center gap-2">
-                    <span>Save Password</span>
+                    <span>Enregistrer le mot de passe</span>
                 </button>
             </form>
         </div>

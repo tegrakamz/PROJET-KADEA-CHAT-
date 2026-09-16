@@ -4,7 +4,10 @@ import { apiGet, apiPost } from "./api.js";
 import {
     saveLastConversation,
     getLastConversation,
-    removeLastConversation
+    removeLastConversation,
+    getUser,
+    getToken,
+    parseJwt
 } from "../utils/storage.js";
 
 const ENDPOINTS = {
@@ -61,12 +64,31 @@ export function getOtherParticipant(conversation, currentUserId) {
         return null;
     }
 
-    return (
-        participants.find(p => {
-            const uid = p.userId ?? p.user?.id ?? p.id ?? p._id ?? p;
-            return String(uid) !== String(currentUserId);
-        }) || null
-    );
+    let myId = currentUserId;
+    if (!myId) {
+        const u = getUser();
+        myId = u?.id || u?.userId;
+    }
+    if (!myId) {
+        const token = getToken();
+        if (token) {
+            const payload = parseJwt(token);
+            myId = payload?.userId || payload?.id;
+        }
+    }
+
+    const myIdStr = myId ? String(myId).toLowerCase() : null;
+
+    if (myIdStr) {
+        const other = participants.find(p => {
+            const uid = p.userId ?? p.user?.id ?? p.id ?? p._id ?? (typeof p === "string" ? p : null);
+            return uid && String(uid).toLowerCase() !== myIdStr;
+        });
+        if (other) return other;
+    }
+
+    // Si pas trouvé par ID, chercher le participant ayant un user ou fullName différent
+    return participants[0] || null;
 }
 
 // Ouvre ou crée une conversation privée avec un utilisateur
@@ -101,8 +123,7 @@ export async function createConversation(recipientId, currentUserId) {
     // Sinon on crée une nouvelle conversation privée
     const data = {
         type: "private",
-        name: "Discussion",
-        participantIds: [String(myId), String(recipientId)]
+        participantIds: [String(recipientId)]
     };
 
     const response = await apiPost(ENDPOINTS.CONVERSATIONS, data);
@@ -118,7 +139,11 @@ export function sortConversations(conversations) {
     });
 }
 
-function getConversationDate(conversation) {
+export function getConversationDate(conversation) {
+    if (Array.isArray(conversation.messages) && conversation.messages.length > 0) {
+        const last = conversation.messages[conversation.messages.length - 1];
+        if (last?.createdAt) return last.createdAt;
+    }
     return (
         conversation.updatedAt ||
         conversation.lastMessageAt ||
@@ -165,9 +190,13 @@ export function formatConversationTime(date) {
 
 // Extrait le texte du dernier message pour l'aperçu
 export function getLastMessage(conversation) {
+    if (Array.isArray(conversation.messages) && conversation.messages.length > 0) {
+        const last = conversation.messages[conversation.messages.length - 1];
+        return last?.content || last?.text || last?.message || "Aucun message";
+    }
     const last = conversation.lastMessage;
     if (last && typeof last === "object") {
-        return last.content || last.text || "Aucun message";
+        return last.content || last.text || last.message || "Aucun message";
     }
     return last || conversation.last_message || "Aucun message";
 }
@@ -175,34 +204,38 @@ export function getLastMessage(conversation) {
 // Détermine l'avatar du correspondant
 export function getConversationAvatar(conversation, currentUserId) {
     const other = getOtherParticipant(conversation, currentUserId);
-    const otherUser = other?.user || other;
+    const otherUser = other?.user || (typeof other === "object" && other?.fullName ? other : null);
+    const convName = getConversationName(conversation, currentUserId);
 
     return (
-        (otherUser && (otherUser.avatarUrl || otherUser.avatar || otherUser.photo)) ||
+        (otherUser && (otherUser.avatarUrl || otherUser.avatar_url || otherUser.avatar || otherUser.photo)) ||
         conversation.avatarUrl ||
         conversation.avatar ||
         conversation.photo ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(getConversationName(conversation, currentUserId))}&background=2563eb&color=fff&bold=true`
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(convName || "Discussion")}&background=2563eb&color=fff&bold=true&size=128`
     );
 }
 
 // Détermine le nom à afficher pour la conversation
 export function getConversationName(conversation, currentUserId) {
     const other = getOtherParticipant(conversation, currentUserId);
-    const otherUser = other?.user || other;
+    const otherUser = other?.user || (typeof other === "object" && other?.fullName ? other : null);
 
-    if (otherUser && (otherUser.fullName || otherUser.name)) {
-        return otherUser.fullName || otherUser.name;
+    if (otherUser && (otherUser.fullName || otherUser.fullname || otherUser.name)) {
+        return otherUser.fullName || otherUser.fullname || otherUser.name;
     }
 
-    if (conversation.name && conversation.name !== "Discussion") {
+    if (conversation.name && conversation.name !== "Discussion" && conversation.name !== "null") {
         return conversation.name;
     }
 
-    return (
-        conversation.fullName ||
-        conversation.contactName ||
-        conversation.name ||
-        "Discussion"
-    );
+    if (conversation.fullName || conversation.contactName) {
+        return conversation.fullName || conversation.contactName;
+    }
+
+    if (otherUser && otherUser.email) {
+        return otherUser.email.split('@')[0];
+    }
+
+    return conversation.name || "Discussion";
 }
