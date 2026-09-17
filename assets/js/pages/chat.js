@@ -130,9 +130,10 @@ async function loadConversations() {
         if (container) container.classList.remove("hidden");
         displayConversations(allConversations);
 
-        // Rouvre la dernière conversation consultée si elle est mémorisée
+        // Rouvre la dernière conversation consultée si elle est mémorisée (uniquement sur tablette/desktop pour préserver l'accès immédiat à la liste sur mobile)
+        const isMobile = window.innerWidth < 768;
         const lastConvId = getRememberedConversation();
-        if (lastConvId && allConversations.length > 0) {
+        if (lastConvId && allConversations.length > 0 && !isMobile) {
             const lastConv = allConversations.find(c => String(c.id) === String(lastConvId));
             if (lastConv) {
                 openConversation(lastConv);
@@ -628,6 +629,42 @@ function initializeEvents() {
             filterAndDisplayContacts(query);
         });
     }
+
+    // Bouton de retour à la liste des discussions (visible sur mobile)
+    const backToConversationsBtn = document.getElementById("btn-back-to-conversations");
+    if (backToConversationsBtn) {
+        backToConversationsBtn.addEventListener("click", () => {
+            currentConversation = null;
+            forgetConversation();
+            toggleChatActiveState(false);
+            displayConversations(allConversations);
+        });
+    }
+
+    // Gestion du redimensionnement d'écran dynamique (rotation mobile, tablette, desktop)
+    window.addEventListener("resize", () => {
+        const isDesktopOrTablet = window.innerWidth >= 768;
+        const conversationsPanel = document.getElementById("conversations-panel");
+        const chatWindowContainer = document.getElementById("chat-window-container");
+        const sidebarNav = document.getElementById("sidebar-nav");
+
+        if (isDesktopOrTablet) {
+            if (conversationsPanel) {
+                conversationsPanel.classList.remove("hidden");
+                conversationsPanel.classList.add("flex");
+            }
+            if (chatWindowContainer) {
+                chatWindowContainer.classList.remove("hidden");
+                chatWindowContainer.classList.add("flex");
+            }
+            if (sidebarNav) {
+                sidebarNav.classList.remove("hidden");
+                sidebarNav.classList.add("flex");
+            }
+        } else {
+            toggleChatActiveState(!!currentConversation);
+        }
+    });
 }
 
 // Charge les contacts dans la modale
@@ -761,18 +798,83 @@ async function handleStartNewConversation(recipientId) {
     }
 }
 
-// Bascule entre l'écran d'accueil et la zone de discussion active
+// Bascule entre l'écran d'accueil et la zone de discussion active (avec adaptation mobile/tablette/desktop)
 function toggleChatActiveState(isActive) {
     const welcomeScreen = document.getElementById("chat-welcome-screen");
     const activeBox = document.getElementById("chat-active-box");
+    const conversationsPanel = document.getElementById("conversations-panel");
+    const chatWindowContainer = document.getElementById("chat-window-container");
+    const sidebarNav = document.getElementById("sidebar-nav");
+
+    const isMobile = window.innerWidth < 768;
 
     if (isActive) {
         if (welcomeScreen) welcomeScreen.classList.add("hidden");
         if (activeBox) activeBox.classList.remove("hidden");
+
+        if (isMobile) {
+            // Sur mobile: afficher la fenêtre de chat plein écran et masquer la liste et la navigation
+            if (conversationsPanel) {
+                conversationsPanel.classList.add("hidden");
+                conversationsPanel.classList.remove("flex");
+            }
+            if (chatWindowContainer) {
+                chatWindowContainer.classList.remove("hidden");
+                chatWindowContainer.classList.add("flex");
+            }
+            if (sidebarNav) {
+                sidebarNav.classList.add("hidden");
+                sidebarNav.classList.remove("flex");
+            }
+        } else {
+            // Sur tablette & desktop: les deux panneaux sont visibles
+            if (conversationsPanel) {
+                conversationsPanel.classList.remove("hidden");
+                conversationsPanel.classList.add("flex");
+            }
+            if (chatWindowContainer) {
+                chatWindowContainer.classList.remove("hidden");
+                chatWindowContainer.classList.add("flex");
+            }
+            if (sidebarNav) {
+                sidebarNav.classList.remove("hidden");
+                sidebarNav.classList.add("flex");
+            }
+        }
     } else {
         if (welcomeScreen) welcomeScreen.classList.remove("hidden");
         if (activeBox) activeBox.classList.add("hidden");
         stopPolling();
+
+        if (isMobile) {
+            // Sur mobile: afficher la liste des discussions et la barre de navigation, masquer le chat
+            if (conversationsPanel) {
+                conversationsPanel.classList.remove("hidden");
+                conversationsPanel.classList.add("flex");
+            }
+            if (chatWindowContainer) {
+                chatWindowContainer.classList.add("hidden");
+                chatWindowContainer.classList.remove("flex");
+            }
+            if (sidebarNav) {
+                sidebarNav.classList.remove("hidden");
+                sidebarNav.classList.add("flex");
+            }
+        } else {
+            // Sur tablette & desktop: écran d'accueil d'attente à droite et liste à gauche
+            if (conversationsPanel) {
+                conversationsPanel.classList.remove("hidden");
+                conversationsPanel.classList.add("flex");
+            }
+            if (chatWindowContainer) {
+                chatWindowContainer.classList.remove("hidden");
+                chatWindowContainer.classList.add("flex");
+            }
+            if (sidebarNav) {
+                sidebarNav.classList.remove("hidden");
+                sidebarNav.classList.add("flex");
+            }
+        }
     }
 }
 

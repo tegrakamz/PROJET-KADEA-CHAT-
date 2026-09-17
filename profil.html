@@ -22,50 +22,55 @@
     </style>
 </head>
 
-<body class="bg-[#f3f4f6] text-slate-900 dark:bg-[#020617] dark:text-slate-100 antialiased h-screen flex overflow-hidden transition-colors duration-200">
+<body class="bg-[#f3f4f6] text-slate-900 dark:bg-[#020617] dark:text-slate-100 antialiased h-screen flex flex-col md:flex-row overflow-hidden transition-colors duration-200">
 
     <script type="module" src="assets/js/auth/authGuard.js"></script>
 
-    <aside class="w-16 h-full bg-white dark:bg-[#090d1f] border-r border-slate-200 dark:border-slate-800/60 flex flex-col justify-between items-center py-4 flex-shrink-0 transition-colors duration-200">
-        <div class="flex flex-col items-center space-y-6 w-full">
-            <div id="brand-title" class="bg-[#2563eb] p-2 rounded-xl shadow-sm w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-blue-700 transition">
+    <aside id="sidebar-nav" class="fixed bottom-0 left-0 right-0 z-30 h-14 md:h-full md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto w-full md:w-16 bg-white dark:bg-[#090d1f] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800/60 flex flex-row md:flex-col justify-between items-center px-4 md:px-0 md:py-4 flex-shrink-0 transition-colors duration-200">
+        <div class="flex flex-row md:flex-col items-center space-x-1 sm:space-x-2 md:space-x-0 md:space-y-6 w-auto md:w-full">
+            <div id="brand-title" class="hidden md:flex bg-[#2563eb] p-2 rounded-xl shadow-sm w-10 h-10 items-center justify-center cursor-pointer hover:bg-blue-700 transition">
                 <i data-lucide="message-square" class="w-5 h-5 text-white"></i>
             </div>
             
-            <nav class="flex flex-col space-y-2 w-full px-2">
-                <a href="chat.html" id="btn-nav-chat" class="flex justify-center items-center py-3 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Messages">
+            <nav class="flex flex-row md:flex-col space-x-1 sm:space-x-2 md:space-x-0 md:space-y-2 w-auto md:w-full md:px-2">
+                <a href="chat.html" id="btn-nav-chat" class="flex justify-center items-center p-2.5 md:py-3 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Messages">
                     <i data-lucide="message-square" class="w-5 h-5"></i>
                 </a>
-                <a href="#" class="flex justify-center items-center py-3 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Appels">
+                <a href="#" class="flex justify-center items-center p-2.5 md:py-3 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Appels">
                     <i data-lucide="phone" class="w-5 h-5"></i>
                 </a>
-                <a href="profil.html" class="flex justify-center items-center py-3 bg-blue-50 dark:bg-slate-800/40 text-[#2563eb] dark:text-blue-550 rounded-xl transition" title="Mon Profil">
+                <a href="profil.html" class="flex justify-center items-center p-2.5 md:py-3 bg-blue-50 dark:bg-slate-800/40 text-[#2563eb] dark:text-blue-550 rounded-xl transition" title="Mon Profil">
                     <i data-lucide="user" class="w-5 h-5"></i>
                 </a>
             </nav>
         </div>
 
-        <div class="flex flex-col items-center space-y-4 w-full px-2">
-            <button id="btn-theme-toggle" class="flex justify-center items-center py-3 w-full text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition cursor-pointer" title="Thème Sombre/Clair">
+        <div class="flex flex-row md:flex-col items-center space-x-1 sm:space-x-2 md:space-x-0 md:space-y-4 w-auto md:w-full md:px-2">
+            <button id="btn-theme-toggle" class="flex justify-center items-center p-2.5 md:py-3 md:w-full text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition cursor-pointer" title="Thème Sombre/Clair">
                 <i data-lucide="moon" id="theme-toggle-icon" class="w-5 h-5"></i>
             </button>
-            <button id="btn-settings" class="flex justify-center items-center py-3 w-full text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Paramètres">
+            <button id="btn-settings" class="hidden sm:flex justify-center items-center p-2.5 md:py-3 md:w-full text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition" title="Paramètres">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
-            <button id="btn-logout" class="flex justify-center items-center py-3 w-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition cursor-pointer" title="Déconnexion">
+            <button id="btn-logout" class="flex justify-center items-center p-2.5 md:py-3 md:w-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition cursor-pointer" title="Déconnexion">
                 <i data-lucide="log-out" class="w-5 h-5"></i>
             </button>
         </div>
     </aside>
 
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden pb-14 md:pb-0">
 
-        <header class="h-16 bg-white dark:bg-[#090d1f] border-b border-slate-200 dark:border-slate-800/60 flex items-center justify-between px-8 sticky top-0 z-10 flex-shrink-0 transition-colors duration-200">
-            <h1 id="logo-forum" class="text-[#2563eb] dark:text-blue-500 font-bold text-base cursor-pointer hover:opacity-90 transition">
-                Kadea Chat
-            </h1>
+        <header class="h-14 sm:h-16 bg-white dark:bg-[#090d1f] border-b border-slate-200 dark:border-slate-800/60 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-10 flex-shrink-0 transition-colors duration-200">
+            <div class="flex items-center gap-3">
+                <a href="chat.html" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Retour aux discussions">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <h1 id="logo-forum" class="text-[#2563eb] dark:text-blue-500 font-bold text-base cursor-pointer hover:opacity-90 transition">
+                    Kadea Chat
+                </h1>
+            </div>
 
-            <div class="flex items-center gap-4 text-slate-400 dark:text-slate-500">
+            <div class="flex items-center gap-1 sm:gap-4 text-slate-400 dark:text-slate-500">
                 <button class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-650 dark:hover:text-slate-300 rounded-lg transition" title="Appel vidéo">
                     <i data-lucide="video" class="w-4 h-4"></i>
                 </button>
@@ -78,15 +83,15 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto px-6 py-10 flex flex-col items-center">
+        <main class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-10 flex flex-col items-center">
 
-            <section class="flex flex-col items-center text-center mb-8">
-                <div class="relative w-24 h-24 mb-4 shadow-md rounded-full">
-                    <img id="profile-avatar" src="" alt="Avatar" class="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-[#090d1f]">
-                    <span class="absolute bottom-1 right-1 w-4 h-4 bg-[#22c55e] border-2 border-white dark:border-[#020617] rounded-full"></span>
+            <section class="flex flex-col items-center text-center mb-6 sm:mb-8">
+                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mb-3 sm:mb-4 shadow-md rounded-full">
+                    <img id="profile-avatar" src="" alt="Avatar" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white dark:border-[#090d1f]">
+                    <span class="absolute bottom-1 right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#22c55e] border-2 border-white dark:border-[#020617] rounded-full"></span>
                 </div>
 
-                <h2 class="user-fullname text-lg font-bold text-slate-900 dark:text-slate-100">
+                <h2 class="user-fullname text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                     Chargement...
                 </h2>
 
@@ -94,7 +99,7 @@
                     chargement...
                 </p>
 
-                <div class="mt-3">
+                <div class="mt-2 sm:mt-3">
                     <span id="profile-member" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/30 text-[#2563eb] dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
                         Chargement des infos...
@@ -102,10 +107,10 @@
                 </div>
             </section>
 
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mb-8">
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mb-6 sm:mb-8">
 
-                <div class="bg-white dark:bg-[#090d1f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm transition-colors duration-200">
-                    <div class="flex justify-between items-center mb-6">
+                <div class="bg-white dark:bg-[#090d1f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 sm:p-6 shadow-sm transition-colors duration-200">
+                    <div class="flex justify-between items-center mb-4 sm:mb-6">
                         <h3 class="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">Account Details</h3>
                         <i data-lucide="contact" class="text-slate-400 dark:text-slate-500 w-4 h-4"></i>
                     </div>
@@ -128,8 +133,8 @@
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-[#090d1f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 shadow-sm transition-colors duration-200">
-                    <div class="flex justify-between items-center mb-6">
+                <div class="bg-white dark:bg-[#090d1f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 sm:p-6 shadow-sm transition-colors duration-200">
+                    <div class="flex justify-between items-center mb-4 sm:mb-6">
                         <h3 class="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">Privacy & Security</h3>
                         <i data-lucide="lock" class="text-slate-400 dark:text-slate-500 w-4 h-4"></i>
                     </div>
@@ -163,7 +168,7 @@
 
             </section>
 
-            <section class="flex flex-col items-center gap-3 w-full max-w-sm mb-12">
+            <section class="flex flex-col items-center gap-3 w-full max-w-sm mb-8 sm:mb-12">
                 <button id="btn-edit-profile" class="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-sm text-xs">
                     <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                     Modifier le profil
@@ -188,8 +193,8 @@
     </div>
 
     <!-- Modale Modifier le profil -->
-    <div id="modal-edit-profile" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative">
+    <div id="modal-edit-profile" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative max-h-[90vh] overflow-y-auto">
             <button id="btn-close-edit-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
@@ -226,8 +231,8 @@
     </div>
 
     <!-- Modale Changement de mot de passe -->
-    <div id="modal-change-password" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative">
+    <div id="modal-change-password" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="bg-white dark:bg-[#090d1f] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-slate-100 dark:border-slate-800/60 relative max-h-[90vh] overflow-y-auto">
             <button id="btn-close-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
